@@ -1,6 +1,6 @@
 ---
 titulo: Como contribuir
-descricao: Como participar do projeto e como atualizar este site.
+descricao: Como participar do projeto, enviar mudanças por fork e pull request, e atualizar este site.
 secao: Comunidade
 ordem: 30
 ---
@@ -14,6 +14,46 @@ O Cairbar 360 é feito por voluntários. Toda ajuda conta: código, testes, desi
 - **Escrever documentação** — inclusive nesta página.
 - **Desenvolver**: cada solução tem um `README.md` com os comandos para rodar localmente.
 
+## Como enviar sua contribuição
+
+Toda mudança chega ao projeto por um **fork** do repositório [cecairbar-schutel-gru/cairbar-schutel-360](https://github.com/cecairbar-schutel-gru/cairbar-schutel-360) e um **pull request (PR)** para a branch `main`.
+
+### Regras do repositório
+
+| Regra | O que significa |
+|---|---|
+| Não é possível criar branches no repositório oficial | Trabalhe sempre em uma branch do **seu fork** |
+| Ninguém envia commits direto para a `main` | Toda mudança entra por **pull request** |
+| Todo PR precisa de **1 aprovação** | Um mantenedor revisa antes do *merge* |
+| Novos commits invalidam a aprovação | Se você alterar o PR depois de aprovado, ele é revisado de novo |
+| A `main` não aceita *force-push* nem pode ser apagada | O histórico oficial é preservado |
+
+Somente a conta mantenedora do CE Cairbar Schutel (`cecairbar-schutel-gru`) pode enviar diretamente para a `main`.
+
+### Passo a passo
+
+1. **Faça o fork** pelo botão *Fork* no GitHub (ou `gh repo fork cecairbar-schutel-gru/cairbar-schutel-360 --clone`).
+2. **Crie uma branch** no seu fork, com um nome que descreva a mudança:
+
+   ```bash
+   git switch -c corrige-recibo-pdf
+   ```
+
+3. **Faça commits pequenos**, com mensagens em português que digam o que mudou.
+4. **Mantenha o fork atualizado** com a `main` oficial antes de abrir o PR:
+
+   ```bash
+   git remote add upstream https://github.com/cecairbar-schutel-gru/cairbar-schutel-360.git
+   git fetch upstream
+   git rebase upstream/main
+   ```
+
+5. **Envie a branch para o seu fork** (`git push -u origin corrige-recibo-pdf`) e **abra o PR** para a `main` do repositório oficial (ou `gh pr create --repo cecairbar-schutel-gru/cairbar-schutel-360 --base main`).
+6. **Descreva o PR**: o que muda, por que, e como testar. Prints de tela ajudam em mudanças de interface.
+7. **Acompanhe a revisão**: responda aos comentários e envie os ajustes na mesma branch — o PR se atualiza sozinho.
+
+Depois do *merge*, a branch do seu fork pode ser apagada.
+
 ## Convenções do projeto
 
 - Idioma: **português do Brasil** na interface, no domínio, na documentação e nas mensagens de commit.
@@ -23,7 +63,7 @@ O Cairbar 360 é feito por voluntários. Toda ajuda conta: código, testes, desi
 
 ## Atualizando este site
 
-O site fica na pasta `site/` e é publicado automaticamente no GitHub Pages a cada envio para a branch `main` que altere essa pasta.
+O site fica na pasta `site/` e é publicado automaticamente no GitHub Pages sempre que um PR que altere essa pasta é aceito na `main`. As mudanças no site seguem o mesmo fluxo de fork e pull request descrito acima.
 
 ### Nova página de documentação
 
