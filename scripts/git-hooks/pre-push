@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Ativado por scripts/publicar-main.sh (core.hooksPath). Bloqueia push de qualquer
+# branch que não seja a main e de commits que contenham os valores reais listados em
+# .publicar/substituicoes.txt.
+set -euo pipefail
+
+zero=0000000000000000000000000000000000000000
+mapa="$(git rev-parse --show-toplevel)/.publicar/substituicoes.txt"
+padroes=$(mktemp)
+trap 'rm -f "$padroes"' EXIT
+[ -s "$mapa" ] && sed -n 's/^\([^#].*\)==>.*$/\1/p' "$mapa" > "$padroes"
+
+while read -r ref_local sha_local ref_remota sha_remoto; do
+    [ "$sha_local" = "$zero" ] && continue
+    if [ "$ref_remota" != refs/heads/main ]; then
+        echo "pre-push: só a main vai ao remoto (tentativa: $ref_local -> $ref_remota)." >&2
+        exit 1
+    fi
+    [ -s "$padroes" ] || continue
+    if [ "$sha_remoto" != "$zero" ] && git cat-file -e "$sha_remoto" 2>/dev/null; then
+        commits=$(git rev-list "$sha_local" "^$sha_remoto")
+    else
+        commits=$(git rev-list "$sha_local")
+    fi
+    for c in $commits; do
+        if git grep -q -I -F -f "$padroes" "$c" || git log -1 --format=%B "$c" | grep -q -F -f "$padroes"; then
+            echo "pre-push: commit $c contém valores reais. Publique com scripts/publicar-main.sh." >&2
+            exit 1
+        fi
+    done
+done

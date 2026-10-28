@@ -28,6 +28,8 @@ AGENTS.md
 # ==========================================================
 # Segredos e credenciais — NUNCA versionar
 # ==========================================================
+# Mapa local de substituições usado por scripts/publicar-main.sh (valores reais)
+.publicar/
 .vault_pass
 .vault_pass*
 *.pem
