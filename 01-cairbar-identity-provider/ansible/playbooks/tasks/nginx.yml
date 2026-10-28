@@ -1,0 +1,199 @@
+---
+# Proxy reverso nginx com TLS na frente do Keycloak (RNF-001).
+- name: Validar configuração de TLS
+  ansible.builtin.assert:
+    that:
+      - keycloak_tls_mode in ['selfsigned', 'letsencrypt']
+      - keycloak_tls_mode != 'letsencrypt' or keycloak_letsencrypt_email | length > 0
+      - keycloak_tls_mode != 'letsencrypt' or keycloak_public_hostname is not match('^[0-9.:]+$')
+      - keycloak_tls_mode != 'letsencrypt' or keycloak_admin_public_hostname is not match('^[0-9.:]+$')
+      - keycloak_admin_public_hostname != keycloak_public_hostname
+    fail_msg: >-
+      letsencrypt exige keycloak_letsencrypt_email e hostnames DNS (não IP); dominio_admin
+      deve ser diferente de dominio_publico
+    quiet: true
+
+- name: Instalar nginx e openssl
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - openssl
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Remover site padrão do nginx
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Recarregar nginx
+
+- name: Criar diretórios de TLS e do desafio ACME
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ keycloak_tls_dir }}", mode: "0700" }
+    - { path: "{{ nginx_acme_webroot }}", mode: "0755" }
+
+# Base compartilhada com os sites das soluções 02 (DurvalCRM) e 03 (SGB), que só
+# acrescentam o próprio arquivo em sites-available e exigem esta base instalada.
+- name: Configurar base compartilhada do nginx
+  ansible.builtin.template:
+    src: ../templates/nginx-cairbar.conf.j2
+    dest: /etc/nginx/conf.d/cairbar.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Recarregar nginx
+
+- name: Configurar snippets compartilhados do nginx
+  ansible.builtin.template:
+    src: "../templates/nginx-snippet-{{ item }}.conf.j2"
+    dest: "/etc/nginx/snippets/cairbar-{{ item }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: [tls, proxy, acme]
+  notify: Recarregar nginx
+
+# Hostnames servidos por este site: domínio público e, se houver, o da console de administração.
+- name: Definir hostnames do site do Keycloak
+  ansible.builtin.set_fact:
+    nginx_keycloak_hostnames: >-
+      {{ [keycloak_public_hostname]
+         + ([keycloak_admin_public_hostname] if keycloak_admin_console_publicada and keycloak_admin_public_hostname else []) }}
+
+- name: Definir hostnames do certificado autoassinado
+  ansible.builtin.set_fact:
+    nginx_selfsigned_san: >-
+      {% for h in nginx_keycloak_hostnames %}{{ 'IP:' if h is match('^[0-9.:]+$') else 'DNS:' }}{{ h }}{{ '' if loop.last else ',' }}{% endfor %}
+
+# Usado em dev e como provisório até o certbot emitir o primeiro certificado.
+# Regerado quando o hostname muda (ex.: do IP para o DNS).
+- name: Verificar hostnames do certificado autoassinado
+  ansible.builtin.command:
+    cmd: openssl x509 -in {{ keycloak_tls_dir }}/keycloak.crt -noout -ext subjectAltName
+  register: nginx_selfsigned_check
+  changed_when: false
+  failed_when: false
+
+# O openssl exibe SAN de IP como "IP Address:".
+- name: Gerar certificado autoassinado
+  ansible.builtin.command:
+    cmd: >-
+      openssl req -x509 -newkey rsa:3072 -nodes -sha256
+      -days {{ keycloak_tls_selfsigned_days }}
+      -subj "/CN={{ keycloak_public_hostname }}"
+      -addext "subjectAltName={{ nginx_selfsigned_san }}"
+      -keyout {{ keycloak_tls_dir }}/keycloak.key
+      -out {{ keycloak_tls_dir }}/keycloak.crt
+  when: >-
+    nginx_selfsigned_check.rc != 0 or
+    nginx_selfsigned_san.split(',') | map('regex_replace', '^IP:', 'IP Address:')
+    | reject('in', nginx_selfsigned_check.stdout) | list | length > 0
+  notify: Recarregar nginx
+
+- name: Proteger chave privada autoassinada
+  ansible.builtin.file:
+    path: "{{ keycloak_tls_dir }}/keycloak.key"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Verificar certificados do Let's Encrypt
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"
+  loop: "{{ nginx_keycloak_hostnames }}"
+  register: nginx_le_cert
+
+# Um certificado por hostname; o autoassinado (com todos os hostnames) cobre os que faltam.
+- name: Selecionar certificados em uso
+  ansible.builtin.set_fact:
+    nginx_tls_cert: "{{ nginx_le_cert.results[0].stat.path if nginx_le_cert.results[0].stat.exists else keycloak_tls_dir ~ '/keycloak.crt' }}"
+    nginx_tls_key: "{{ nginx_le_cert.results[0].stat.path | dirname ~ '/privkey.pem' if nginx_le_cert.results[0].stat.exists else keycloak_tls_dir ~ '/keycloak.key' }}"
+    nginx_admin_tls_cert: "{{ nginx_le_cert.results[-1].stat.path if nginx_le_cert.results[-1].stat.exists else keycloak_tls_dir ~ '/keycloak.crt' }}"
+    nginx_admin_tls_key: "{{ nginx_le_cert.results[-1].stat.path | dirname ~ '/privkey.pem' if nginx_le_cert.results[-1].stat.exists else keycloak_tls_dir ~ '/keycloak.key' }}"
+
+- name: Configurar site do Keycloak no nginx
+  ansible.builtin.template:
+    src: ../templates/nginx-keycloak.conf.j2
+    dest: /etc/nginx/sites-available/keycloak.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Recarregar nginx
+
+- name: Habilitar site do Keycloak
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/keycloak.conf
+    dest: /etc/nginx/sites-enabled/keycloak.conf
+    state: link
+  notify: Recarregar nginx
+
+- name: Habilitar e iniciar nginx
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Validar configuração do nginx
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Aplicar configuração do nginx
+  ansible.builtin.meta: flush_handlers
+
+- name: Emitir certificado Let's Encrypt
+  when: keycloak_tls_mode == 'letsencrypt'
+  block:
+    - name: Instalar certbot
+      ansible.builtin.apt:
+        name: certbot
+        state: present
+
+    # Um certificado por site (--cert-name = hostname); os apps emitem o deles.
+    - name: Solicitar certificados (webroot)
+      ansible.builtin.command:
+        cmd: >-
+          certbot certonly --webroot -w {{ nginx_acme_webroot }}
+          --cert-name {{ item }} -d {{ item }}
+          --email {{ keycloak_letsencrypt_email }}
+          --agree-tos --non-interactive
+        creates: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"
+      loop: "{{ nginx_keycloak_hostnames }}"
+
+    - name: Recarregar nginx após renovação
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+        content: |
+          #!/bin/sh
+          systemctl reload nginx
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Passar a usar o certificado do Let's Encrypt
+      ansible.builtin.set_fact:
+        nginx_tls_cert: "/etc/letsencrypt/live/{{ keycloak_public_hostname }}/fullchain.pem"
+        nginx_tls_key: "/etc/letsencrypt/live/{{ keycloak_public_hostname }}/privkey.pem"
+        nginx_admin_tls_cert: "/etc/letsencrypt/live/{{ nginx_keycloak_hostnames[-1] }}/fullchain.pem"
+        nginx_admin_tls_key: "/etc/letsencrypt/live/{{ nginx_keycloak_hostnames[-1] }}/privkey.pem"
+
+    - name: Reconfigurar site com o certificado do Let's Encrypt
+      ansible.builtin.template:
+        src: ../templates/nginx-keycloak.conf.j2
+        dest: /etc/nginx/sites-available/keycloak.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Recarregar nginx
+
+    - name: Validar configuração final do nginx
+      ansible.builtin.command:
+        cmd: nginx -t
+      changed_when: false

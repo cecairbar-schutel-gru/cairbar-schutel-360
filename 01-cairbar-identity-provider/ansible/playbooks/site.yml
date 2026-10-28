@@ -1,0 +1,14 @@
+---
+# Instalação monolítica completa (nativa, sem containers), na ordem de dependência:
+# PostgreSQL -> Keycloak + nginx/TLS -> configuração do realm -> Serviço de Carteirinha.
+- name: PostgreSQL
+  ansible.builtin.import_playbook: postgresql.yml
+
+- name: Keycloak
+  ansible.builtin.import_playbook: keycloak.yml
+
+- name: Realm
+  ansible.builtin.import_playbook: keycloak-realm.yml
+
+- name: Serviço de Carteirinha
+  ansible.builtin.import_playbook: carteirinha.yml

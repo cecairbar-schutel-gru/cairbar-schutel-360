@@ -1,0 +1,97 @@
+/*
+ * Páginas de login sem versão MUI própria (DefaultPage do Keycloakify com doUseDefaultCss=false).
+ * Sem o CSS do PatternFly, o Keycloakify só aplica as classes kc*; aqui elas recebem o visual
+ * do tema MUI pelas variáveis CSS (createTheme({ cssVariables: true })).
+ */
+
+.cc-fallback .kcFormGroupClass {
+    margin-bottom: 16px;
+}
+
+.cc-fallback .kcLabelClass {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.cc-fallback .kcInputClass,
+.cc-fallback select,
+.cc-fallback textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font: inherit;
+    color: var(--mui-palette-text-primary);
+    background: var(--mui-palette-background-paper);
+    border: 1px solid rgba(17, 17, 17, 0.35);
+    border-radius: var(--mui-shape-borderRadius);
+}
+
+.cc-fallback .kcInputClass:focus,
+.cc-fallback select:focus,
+.cc-fallback textarea:focus {
+    outline: 2px solid var(--mui-palette-primary-main);
+    outline-offset: 0;
+    border-color: var(--mui-palette-primary-main);
+}
+
+.cc-fallback .kcInputGroup {
+    display: flex;
+    gap: 8px;
+}
+
+.cc-fallback .kcInputErrorMessageClass {
+    display: block;
+    margin-top: 4px;
+    color: var(--mui-palette-error-main);
+    font-size: 0.875rem;
+}
+
+.cc-fallback .kcButtonClass,
+.cc-fallback .kcFormPasswordVisibilityButtonClass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 20px;
+    font: inherit;
+    font-weight: 500;
+    border-radius: var(--mui-shape-borderRadius);
+    border: 1px solid var(--mui-palette-primary-main);
+    color: var(--mui-palette-primary-main);
+    background: transparent;
+    cursor: pointer;
+}
+
+.cc-fallback .kcButtonPrimaryClass {
+    color: var(--mui-palette-primary-contrastText);
+    background: var(--mui-palette-primary-main);
+}
+
+.cc-fallback .kcButtonPrimaryClass:hover {
+    background: var(--mui-palette-primary-dark);
+}
+
+.cc-fallback .kcButtonBlockClass {
+    width: 100%;
+}
+
+.cc-fallback .kcButtonClass:focus-visible,
+.cc-fallback a:focus-visible {
+    outline: 3px solid var(--mui-palette-primary-light);
+    outline-offset: 2px;
+}
+
+.cc-fallback .kcFormButtonsClass {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.cc-fallback a {
+    color: var(--mui-palette-primary-main);
+}
+
+.cc-fallback ul {
+    padding-left: 20px;
+}

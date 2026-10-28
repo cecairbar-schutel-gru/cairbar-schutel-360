@@ -1,0 +1,216 @@
+---
+# Variáveis compartilhadas pelos playbooks da plataforma de identidade digital.
+# Instalação monolítica e nativa (sem containers): PostgreSQL, Keycloak e nginx
+# na mesma VM. Segredos ficam em global_vars/secrets.yml (ver secrets.yml.example).
+#
+# Cada ambiente (dev/hml/prd) é uma VM própria, com banco, chaves e segredos
+# próprios (seção 7.1). O ambiente vem da variável "ambiente" do inventário.
+
+# ---------------------------------------------------------------------------
+# Java (Keycloak)
+# ---------------------------------------------------------------------------
+java_package: openjdk-21-jre-headless
+java_home: "/usr/lib/jvm/java-21-openjdk-{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+
+# ---------------------------------------------------------------------------
+# PostgreSQL (repositório oficial PGDG)
+# ---------------------------------------------------------------------------
+postgresql_version: 18
+postgresql_port: 5432
+postgresql_conf_dir: "/etc/postgresql/{{ postgresql_version }}/main"
+
+# Com tudo na mesma VM o banco só escuta localmente.
+postgresql_listen_addresses: localhost
+postgresql_allowed_cidrs:
+  - 127.0.0.1/32
+  - ::1/128
+
+# Ajustado para uma VM de 8 GB compartilhada com o Keycloak.
+postgresql_shared_buffers: 1GB
+postgresql_effective_cache_size: 3GB
+postgresql_max_connections: 100
+
+# Este PostgreSQL é compartilhado: os bancos durvalcrm (02-durval-crm) e booksys
+# (03-cairbar-booksys) são criados pelos playbooks daquelas soluções, não daqui.
+# Bancos do Keycloak (seção 17.1) e do Serviço de Carteirinha (seção 17.2).
+postgresql_databases:
+  - name: keycloak
+    owner: keycloak
+    password: "{{ secret_postgresql_keycloak_password }}"
+  - name: carteirinha
+    owner: carteirinha
+    password: "{{ secret_postgresql_carteirinha_password }}"
+
+# Backup diário (RNF-012) de todos os bancos do servidor com pg_dump em formato custom,
+# via timer do systemd.
+postgresql_backup_dir: /var/backups/postgresql
+postgresql_backup_retention_days: 14
+postgresql_backup_on_calendar: "*-*-* 02:30:00"
+# TODO(seção 23.12): política de retenção definitiva e cópia para fora da VM.
+
+# ---------------------------------------------------------------------------
+# Keycloak (linha 26.x)
+# ---------------------------------------------------------------------------
+keycloak_version: 26.8.1
+keycloak_download_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.tar.gz"
+keycloak_checksum: "sha1:{{ keycloak_download_url }}.sha1"
+keycloak_home: /opt/keycloak
+keycloak_user: keycloak
+
+# O Keycloak só escuta em loopback: o acesso externo passa pelo nginx (TLS).
+keycloak_http_host: 127.0.0.1
+keycloak_http_port: 8180
+keycloak_management_port: 9000
+
+# Instalação monolítica: um único nó, sem cluster Infinispan/JGroups.
+keycloak_cache: local
+
+# Hostname público, definido por ambiente no inventário (dominio_publico).
+# Sem DNS definido, usa o endereço da VM (certificado autoassinado).
+keycloak_public_hostname: "{{ dominio_publico | default(ansible_host) | default(inventory_hostname) }}"
+keycloak_hostname: "https://{{ keycloak_public_hostname }}"
+# Hostname da console de administração (dominio_admin no inventário). Vazio: a console fica
+# em https://<keycloak_public_hostname>/admin/; definido: só em https://<dominio_admin>/
+# (o domínio público passa a bloquear /admin/ e o realm master).
+keycloak_admin_public_hostname: "{{ dominio_admin | default('') }}"
+keycloak_hostname_admin: >-
+  {{ ('https://' ~ keycloak_admin_public_hostname if keycloak_admin_public_hostname else keycloak_hostname)
+     if keycloak_admin_console_publicada else 'http://localhost:' ~ keycloak_http_port }}
+
+# Console de administração (/admin/ e realm master) publicada pelo nginx no hostname acima.
+# Com false, só fica acessível por túnel SSH:
+#   ssh -L 8180:localhost:8180 <usuario>@<vm>   e abra http://localhost:8180/admin/
+# keycloak_admin_console_allow: origens liberadas (valores da diretiva allow do nginx,
+# ex.: 203.0.113.0/24); as demais recebem 403. Loopback é sempre liberado.
+# TODO: restringir às redes dos administradores (ex.: VPN) em hml/prd.
+keycloak_admin_console_publicada: true
+keycloak_admin_console_allow:
+  - all
+keycloak_proxy_headers: xforwarded
+keycloak_proxy_trusted_addresses: 127.0.0.1
+
+keycloak_db_host: "{{ 'localhost' if inventory_hostname in groups['postgresql'] else hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0]) }}"
+keycloak_db_name: keycloak
+keycloak_db_user: keycloak
+keycloak_db_password: "{{ secret_postgresql_keycloak_password }}"
+
+# Admin temporário do realm master (console) e cliente de serviço temporário
+# usado pela automação do realm (Client Credentials; ROPC é proibido, seção 8.2).
+# Ambos só são criados na primeira inicialização, quando o master não tem admin.
+keycloak_admin_user: admin
+keycloak_admin_password: "{{ secret_keycloak_admin_password }}"
+keycloak_automation_client_id: automacao-ansible
+keycloak_automation_client_secret: "{{ secret_keycloak_automation_client_secret }}"
+
+keycloak_heap_opts: "-Xms512m -Xmx1536m"
+
+# Tema login/account (Comunidade Cairbar), gerado em ../theme com
+# "npm run build-keycloak-theme" antes de rodar o playbook.
+keycloak_theme_name: cecairbar
+keycloak_theme_jar: "{{ playbook_dir }}/../../theme/dist_keycloak/cecairbar-theme.jar"
+
+# Extensões do realm (../keycloak-extensions, ADR 0003): provisionamento da pessoa na criação
+# do usuário (personId por sequência no banco). Gerado com "mvn package" antes do playbook.
+keycloak_extensions_jar: "{{ playbook_dir }}/../../keycloak-extensions/target/cecairbar-keycloak-extensions.jar"
+
+# Logs estruturados (RNF-006): JSON no journald. O access log registra só o
+# caminho (%R; %U incluiria a query string, que carrega code/state do OIDC) e o
+# correlation ID repassado pelo nginx no cabeçalho X-Request-ID.
+# O detector de conta existente do login com Google grava o e-mail em nível ERROR
+# quando não há cadastro; o evento de auditoria (user_not_found) já registra a falha.
+keycloak_log_level: "info,org.keycloak.authentication.authenticators.broker.IdpDetectExistingBrokerUserAuthenticator:fatal"
+keycloak_access_log_pattern: '%h "%m %R %H" %s %b "%{i,X-Request-ID}"'
+
+# ---------------------------------------------------------------------------
+# Proxy reverso (nginx) e TLS (RNF-001)
+# ---------------------------------------------------------------------------
+# selfsigned: certificado gerado na VM (dev/testes).
+# letsencrypt: certbot em modo webroot; exige keycloak_public_hostname como DNS
+# apontando para a VM, portas 80/443 abertas e keycloak_letsencrypt_email.
+# O autoassinado também serve de provisório até o primeiro certificado do certbot.
+keycloak_tls_mode: letsencrypt
+keycloak_letsencrypt_email: "cecairbarschutelgru@cecairbar.org.br"
+keycloak_tls_dir: /etc/nginx/tls
+keycloak_tls_selfsigned_days: 825
+nginx_acme_webroot: /var/www/acme
+
+# ---------------------------------------------------------------------------
+# Aplicações web clientes do realm (mapa de navegação em ../../esquema-navegacao.png)
+# ---------------------------------------------------------------------------
+# Cada app vira um cliente confidencial (Authorization Code + PKCE) com clientId = nome,
+# com redirect e logout em https://<hostname>/*. O login é sempre no realm, pelo hostname
+# do Keycloak (issuer único, regra 6).
+# Esta solução só cria os clientes: o site de cada app no nginx desta VM (server_name,
+# certificado e proxy para o upstream) é acrescentado pela solução do app
+# (02-durval-crm e 03-cairbar-booksys), com o mesmo hostname definido aqui.
+# Hostname vem do inventário (dominio_*); vazio -> app fora do realm.
+keycloak_apps:
+  - nome: durvalcrm
+    descricao: DurvalCRM
+    hostname: "{{ dominio_durvalcrm | default('') }}"
+    client_secret_var: secret_keycloak_durvalcrm_client_secret
+  # Substituiu o cliente sgb em 2026-10-26 (realm_clients_removidos); mesmo hostname e segredo.
+  - nome: booksys
+    descricao: Sistema de Biblioteca (Booksys)
+    hostname: "{{ dominio_sgb | default('') }}"
+    client_secret_var: secret_keycloak_sgb_client_secret
+
+# ---------------------------------------------------------------------------
+# Realm (seções 7 e 8) — definição completa em realm/cecairbar.yml
+# ---------------------------------------------------------------------------
+keycloak_realm: cecairbar
+
+# ---------------------------------------------------------------------------
+# Google Cloud: Workload Identity Federation (README, seção "Google Cloud")
+# ---------------------------------------------------------------------------
+# O realm é o provedor OIDC de um pool do Google Cloud (um pool por ambiente). gcp_wif_audience
+# é a audience padrão aceita pelo provedor e entra nos tokens do cliente servico-carteirinha-gcp.
+gcp_wif_provider: "{{ secret_gcp_wif_provider }}"
+gcp_wif_audience: "https://iam.googleapis.com/{{ gcp_wif_provider }}"
+
+# ---------------------------------------------------------------------------
+# Serviço de Carteirinha (../card-service) — Node.js por tarball oficial + systemd
+# ---------------------------------------------------------------------------
+# Gerado localmente com "npm ci && npm run build" em card-service/ antes do playbook
+# (que roda com --ee false, como o keycloak.yml).
+carteirinha_node_version: 22.23.3
+carteirinha_node_arch: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'x64' }}"
+carteirinha_node_url: "https://nodejs.org/dist/v{{ carteirinha_node_version }}/node-v{{ carteirinha_node_version }}-linux-{{ carteirinha_node_arch }}.tar.xz"
+carteirinha_node_home: "/opt/node-v{{ carteirinha_node_version }}-linux-{{ carteirinha_node_arch }}"
+carteirinha_source_dir: "{{ playbook_dir }}/../../card-service"
+carteirinha_home: /opt/carteirinha
+carteirinha_config_dir: /etc/carteirinha
+carteirinha_user: carteirinha
+
+# Só em loopback: o nginx publica /api/v1/cards/ no mesmo host do Keycloak (sem CORS).
+carteirinha_http_host: 127.0.0.1
+carteirinha_http_port: 8280
+carteirinha_db_name: carteirinha
+carteirinha_db_user: carteirinha
+carteirinha_db_password: "{{ secret_postgresql_carteirinha_password }}"
+carteirinha_log_level: info
+
+# Cliente de serviço do realm usado pelo serviço (Admin API: ler perfil, gravar cardStatus)
+# e audience exigida nos tokens recebidos. Clientes (azp) que podem pedir a auto-emissão.
+carteirinha_keycloak_client_id: servico-carteirinha
+carteirinha_keycloak_client_secret: "{{ secret_keycloak_carteirinha_client_secret }}"
+carteirinha_allowed_clients:
+  - account-console
+
+# Google Wallet (passe genérico). Issuer ID do Google Pay & Wallet Console e conta de serviço
+# convidada no console. Não há chave da conta: o serviço a personifica por Workload Identity
+# Federation (abaixo), com token do cliente servico-carteirinha-gcp do realm.
+carteirinha_google_wallet_issuer_id: "{{ secret_google_wallet_issuer_id }}"
+carteirinha_google_wallet_service_account: "{{ secret_google_wallet_service_account_email }}"
+carteirinha_gcp_client_id: servico-carteirinha-gcp
+carteirinha_gcp_client_secret: "{{ secret_keycloak_carteirinha_gcp_client_secret }}"
+carteirinha_google_wallet_issuer_name: CE Cairbar Schutel Guarulhos
+# Fundo branco, como o cartão do portal; imagens em card-service/assets.
+carteirinha_google_wallet_background_color: "#FFFFFF"
+# O Google baixa as imagens dessa URL: precisa ser HTTPS público com certificado válido
+# (sem ela o passe sai sem imagens). Servidas pelo próprio serviço, o que exige
+# keycloak_tls_mode: letsencrypt; com o autoassinado, use o bucket de
+# scripts/gcp-wallet-assets.sh (README).
+carteirinha_google_wallet_assets_base_url: "{{ keycloak_hostname }}/api/v1/cards/assets"
+# TODO(seção 9.2): texto de devolução/contato em caso de uso indevido.
+carteirinha_google_wallet_contact_text: ""

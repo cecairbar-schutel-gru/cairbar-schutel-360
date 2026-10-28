@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+# Parâmetros TLS comuns aos server 443 dos sites (o certificado fica em cada site).
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers off;
+ssl_session_cache shared:SSL:10m;
+ssl_session_tickets off;
+
+add_header X-Request-ID $correlation_id always;
+server_tokens off;

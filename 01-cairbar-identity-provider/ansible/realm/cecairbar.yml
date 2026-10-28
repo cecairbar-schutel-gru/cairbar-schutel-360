@@ -1,0 +1,422 @@
+---
+# Configuração versionada do realm cecairbar (seções 7, 8 e 15).
+# Aplicada por playbooks/keycloak-realm.yml via Admin REST API. O playbook só
+# cria e atualiza: nada aqui é removido do Keycloak quando sai deste arquivo.
+
+# Configurações gerais do realm (PUT /admin/realms/<realm>).
+realm_settings:
+  displayName: CE Cairbar Schutel Guarulhos
+  enabled: true
+  sslRequired: external
+  # Autocadastro na Comunidade Cairbar: a pessoa entra no grupo /participantes
+  # (realm_default_groups) e a extensão cecairbar-provisionamento gera o personId.
+  # TODO: verifyEmail: true depois de configurar o SMTP (hoje o e-mail não é confirmado).
+  registrationAllowed: true
+  resetPasswordAllowed: true
+  rememberMe: false
+  loginWithEmailAllowed: true
+  duplicateEmailsAllowed: false
+  editUsernameAllowed: false
+  # Bloqueio de tentativas repetidas de autenticação (seção 15.1).
+  bruteForceProtected: true
+  permanentLockout: false
+  failureFactor: 5
+  waitIncrementSeconds: 60
+  maxFailureWaitSeconds: 900
+  maxDeltaTimeSeconds: 43200
+  passwordPolicy: "length(12) and notUsername and notEmail and passwordHistory(5)"
+  # Tokens curtos; o refresh fica limitado pela sessão.
+  accessTokenLifespan: 300
+  ssoSessionIdleTimeout: 1800
+  ssoSessionMaxLifespan: 36000
+  revokeRefreshToken: true
+  refreshTokenMaxReuse: 0
+  # Login e Comunidade Cairbar (tema em ../theme, instalado por playbooks/keycloak.yml,
+  # que roda antes deste playbook no site.yml). E-mails seguem no tema padrão até o SMTP.
+  # TODO: emailTheme: cecairbar depois de configurar o SMTP.
+  loginTheme: cecairbar
+  accountTheme: cecairbar
+  # O portal e as telas de login só têm textos em pt-BR.
+  internationalizationEnabled: true
+  supportedLocales:
+    - pt-BR
+  defaultLocale: pt-BR
+  # Auditoria (RF-013 / RNF-007). Os detalhes dos eventos administrativos
+  # (representação completa do recurso) ficam desligados para não registrar PII.
+  eventsEnabled: true
+  eventsListeners:
+    - jboss-logging
+    # ../keycloak-extensions (ADR 0003), instalado por playbooks/keycloak.yml.
+    - cecairbar-provisionamento
+  # TODO(seção 23.12): prazo de retenção de eventos (hoje 90 dias).
+  eventsExpiration: 7776000
+  adminEventsEnabled: true
+  adminEventsDetailsEnabled: false
+  # TODO: configurar SMTP (smtpServer) para verificação de e-mail e reset de senha.
+  # TODO(seção 15.1): MFA obrigatório para administradores de identidade,
+  # segurança e tesouraria (fluxo condicional por grupo/role).
+
+# Realm roles (seção 8.3). Atribua preferencialmente a grupos (seção 8.5).
+# TODO: matriz de roles x grupos (seção 25) e quais roles entram nas default roles.
+realm_roles:
+  - name: platform-user
+    description: Usuário da plataforma
+  - name: platform-admin
+    description: Administração funcional da plataforma
+  - name: security-admin
+    description: Administração de segurança
+  - name: identity-admin
+    description: Administração de identidades (cadastro, suspensão, correção)
+  # Perfis funcionais do DurvalCRM e do SGB, atribuídos pelos grupos de realm_roles_grupos.
+  - name: schutelista
+    description: >-
+      Perfil padrão (autocadastro na Comunidade Cairbar ou cadastro pelo operador). DurvalCRM:
+      agenda atividades oferecidas pela organização. SGB: encomenda livros, faz empréstimos e
+      acompanha seu status de leitor na gamificação
+  - name: operador
+    description: >-
+      DurvalCRM: recebe doações, emite recibos de doações e de pagamentos recorrentes, cadastra
+      doadores recorrentes e agenda atividades para a comunidade. SGB: emite empréstimos, recebe
+      devoluções, cadastra listas de espera e monta listas temáticas de livros
+  - name: bibliotecario
+    description: >-
+      SGB: funções do operador (empréstimos, devoluções, listas de espera e listas temáticas)
+      e gerenciamento completo do inventário da biblioteca
+  - name: vendedor
+    description: >-
+      DurvalCRM: vende produtos da cantina e da livraria, gerencia o inventário de produtos
+      (cadastro e alteração), solicita intenções de gasto e recebe doações
+  # TODO: definir as funções do perfil pdv no SGB.
+  - name: pdv
+    description: >-
+      Ponto de venda. DurvalCRM: opera só o PDV da cantina (vende produtos da cantina)
+  - name: tesoureiro
+    description: >-
+      DurvalCRM: gerencia contas a receber, contas a pagar e saldo de caixa e aprova ou reprova
+      as intenções de gasto
+  - name: administrador
+    description: Acesso completo ao DurvalCRM e ao SGB
+
+# Realm roles de cada grupo (seção 8.5); membros de um subgrupo herdam as roles dos grupos
+# acima. /participantes é o grupo padrão (realm_default_groups): todo usuário novo recebe
+# schutelista. Só atribui: roles que saem daqui continuam no grupo até serem removidas à mão.
+realm_roles_grupos:
+  /participantes:
+    - schutelista
+  /voluntarios/operadores:
+    - operador
+  /voluntarios/biblioteca:
+    - bibliotecario
+  /voluntarios/vendas:
+    - vendedor
+  /pdv:
+    - pdv
+  /tesouraria:
+    - tesoureiro
+  /administradores:
+    - administrador
+
+# Grupos (seção 8.5), na ordem de criação (pais antes dos filhos). Os perfis de acesso
+# (participante, operador, vendedor, pdv, tesoureiro, administrador) e suas client roles estão
+# em cecairbar-apps.yml.
+realm_groups:
+  - /participantes
+  - /voluntarios
+  - /voluntarios/operadores
+  - /voluntarios/biblioteca
+  - /voluntarios/eventos
+  - /voluntarios/vendas
+  - /pdv
+  - /tesouraria
+  - /administradores
+
+# Grupos de todo usuário novo (autocadastro, Admin API): perfil participante.
+realm_default_groups:
+  - /participantes
+
+# Valores antigos de relationships trocados pelo perfil participante. Usuários com algum
+# deles passam a ter PARTICIPANT (os demais valores ficam) e entram em /participantes.
+realm_relationships_migracao:
+  LIBRARY_MEMBER: PARTICIPANT
+  DONOR: PARTICIPANT
+  EVENT_PARTICIPANT: PARTICIPANT
+  CUSTOMER: PARTICIPANT
+realm_relationships_grupo: /participantes
+
+# Client scope padrão que coloca a claim person_id em todo token (seção 8.6).
+realm_person_id_scope: person_id
+
+# User Profile (seção 7.3). username, email, firstName e lastName são atributos
+# nativos do Keycloak e permanecem; os demais seguem a especificação.
+# Unicidade e geração de personId são responsabilidade do provisionamento (não do
+# Keycloak) e precisam de testes explícitos (seção 7.3, observação).
+realm_user_profile:
+  unmanagedAttributePolicy: ADMIN_VIEW
+  groups:
+    - name: user-metadata
+      displayHeader: User metadata
+      displayDescription: Attributes, which refer to user metadata
+    - name: identidade
+      displayHeader: Identidade
+      displayDescription: Identificação e situação da pessoa na organização
+  attributes:
+    - name: username
+      displayName: "${username}"
+      validations:
+        length: { min: 3, max: 255 }
+        username-prohibited-characters: {}
+        up-username-not-idn-homograph: {}
+      permissions: { view: [admin, user], edit: [admin, user] }
+      multivalued: false
+    - name: email
+      displayName: "${email}"
+      validations:
+        email: {}
+        length: { max: 255 }
+      permissions: { view: [admin, user], edit: [admin, user] }
+      multivalued: false
+    # Nome e sobrenome obrigatórios: a extensão compõe o fullName com eles no autocadastro.
+    - name: firstName
+      displayName: "${firstName}"
+      required: { roles: [admin, user] }
+      validations:
+        length: { max: 255 }
+        person-name-prohibited-characters: {}
+      permissions: { view: [admin, user], edit: [admin, user] }
+      multivalued: false
+    - name: lastName
+      displayName: "${lastName}"
+      required: { roles: [admin, user] }
+      validations:
+        length: { max: 255 }
+        person-name-prohibited-characters: {}
+      permissions: { view: [admin, user], edit: [admin, user] }
+      multivalued: false
+    # Chave de integração, gerada pela extensão cecairbar-provisionamento na criação do usuário
+    # (ADR 0003). Somente leitura para todos, inclusive administradores e a Admin API: imutável.
+    # personId, fullName, identityStatus e cardStatus não são "required" porque a extensão os
+    # preenche depois da validação do cadastro (o administrador não precisa digitá-los).
+    # TODO: atribuir personId aos usuários criados antes da extensão (nenhuma API grava mais).
+    - name: personId
+      displayName: Identificador da pessoa
+      group: identidade
+      validations:
+        pattern:
+          pattern: '^PER-[0-9]{8}$'
+          error-message: "personId deve seguir o formato PER-00000001"
+      permissions: { view: [admin, user], edit: [] }
+      multivalued: false
+    - name: fullName
+      displayName: Nome completo
+      group: identidade
+      validations:
+        length: { min: 1, max: 255 }
+        person-name-prohibited-characters: {}
+      permissions: { view: [admin, user], edit: [admin] }
+      multivalued: false
+    - name: preferredName
+      displayName: Nome de preferência
+      group: identidade
+      validations:
+        length: { max: 255 }
+        person-name-prohibited-characters: {}
+      permissions: { view: [admin, user], edit: [admin, user] }
+      multivalued: false
+    - name: mobilePhone
+      displayName: Celular
+      group: identidade
+      validations:
+        pattern:
+          pattern: '^\+?[0-9]{8,15}$'
+          error-message: "Celular deve conter de 8 a 15 dígitos, opcionalmente com +"
+      permissions: { view: [admin, user], edit: [admin, user] }
+      multivalued: false
+    - name: birthDate
+      displayName: Data de nascimento
+      group: identidade
+      validations:
+        iso-date: {}
+      annotations:
+        inputType: html5-date
+      permissions: { view: [admin, user], edit: [admin] }
+      multivalued: false
+    - name: identityStatus
+      displayName: Situação da identidade
+      group: identidade
+      validations:
+        options: { options: [ACTIVE, INACTIVE, SUSPENDED] }
+      annotations:
+        inputType: select
+      permissions: { view: [admin, user], edit: [admin] }
+      multivalued: false
+    # PARTICIPANT substitui LIBRARY_MEMBER, DONOR, EVENT_PARTICIPANT e CUSTOMER
+    # (realm_relationships_migracao). Informativo: o acesso vem dos grupos (cecairbar-apps.yml).
+    - name: relationships
+      displayName: Relacionamentos
+      group: identidade
+      validations:
+        options: { options: [VOLUNTEER, PARTICIPANT] }
+      annotations:
+        inputType: multiselect
+      permissions: { view: [admin, user], edit: [admin] }
+      multivalued: true
+    - name: cardStatus
+      displayName: Situação da carteirinha
+      group: identidade
+      validations:
+        options: { options: [NOT_ISSUED, ACTIVE, SUSPENDED, REVOKED] }
+      annotations:
+        inputType: select
+      permissions: { view: [admin, user], edit: [admin] }
+      multivalued: false
+
+# ---------------------------------------------------------------------------
+# Login com Google (identity provider adicional)
+# ---------------------------------------------------------------------------
+# O Google só autentica: não cria usuários nem altera o perfil (Keycloak é o
+# System of Record e o personId vem do provisionamento). No primeiro login com
+# Google a conta precisa existir no realm (mesmo e-mail) e a pessoa confirma o
+# vínculo com a senha; depois disso entra só com o Google.
+# URI de redirecionamento a cadastrar no Google Cloud Console (por ambiente):
+#   https://<keycloak_public_hostname>/realms/cecairbar/broker/google/endpoint
+realm_first_broker_login_flow:
+  alias: primeiro-login-vincular-conta
+  description: Primeiro login por provedor externo — só vincula contas existentes, com reautenticação
+  executions:
+    # Falha (federatedIdentityUnavailableMessage) se não houver usuário com o e-mail do Google.
+    - provider: idp-detect-existing-broker-user
+      requirement: REQUIRED
+    # Reautenticação com a senha da conta existente antes de vincular.
+    - provider: idp-username-password-form
+      requirement: REQUIRED
+  # TODO(seção 15.1): exigir OTP na reautenticação quando o MFA for definido.
+
+# clientId/clientSecret vêm de global_vars/secrets-<ambiente>.yml (um cliente OAuth por ambiente).
+realm_google_idp:
+  alias: google
+  providerId: google
+  displayName: Google
+  enabled: true
+  trustEmail: false
+  storeToken: false
+  addReadTokenRoleOnCreate: false
+  linkOnly: false
+  hideOnLogin: false
+  firstBrokerLoginFlowAlias: primeiro-login-vincular-conta
+  config:
+    # IMPORT: os dados do Google não sobrescrevem o perfil no Keycloak.
+    syncMode: IMPORT
+    # Só o necessário para localizar a conta existente pelo e-mail.
+    defaultScope: openid email
+    pkceEnabled: "true"
+    pkceMethod: S256
+    guiOrder: "1"
+
+# ---------------------------------------------------------------------------
+# Serviço de Carteirinha (../card-service, playbooks/carteirinha.yml)
+# ---------------------------------------------------------------------------
+# Cliente de serviço (Client Credentials) usado pelo serviço na Admin API para ler o
+# perfil necessário à emissão e gravar cardStatus. O segredo vem de
+# secret_keycloak_carteirinha_client_secret.
+realm_card_service_client:
+  clientId: servico-carteirinha
+  name: Serviço de Carteirinha
+  description: Emissão de carteirinhas digitais (Google Wallet); acesso restrito à Admin API
+  enabled: true
+  protocol: openid-connect
+  publicClient: false
+  bearerOnly: false
+  clientAuthenticatorType: client-secret
+  serviceAccountsEnabled: true
+  standardFlowEnabled: false
+  implicitFlowEnabled: false
+  directAccessGrantsEnabled: false
+  frontchannelLogout: false
+
+# Roles do realm-management da service account. manage-users é necessário para gravar
+# cardStatus (edit: admin no User Profile), mas também permite alterar outros atributos.
+# TODO(RNF-002): restringir com Fine-Grained Admin Permissions v2 quando a matriz de
+# permissões (seção 25) for definida.
+realm_card_service_roles:
+  - view-users
+  - manage-users
+
+# Scope com o audience mapper: tokens dos clientes que o recebem passam a valer para o
+# Serviço de Carteirinha (que exige aud=servico-carteirinha, regra 6).
+realm_card_audience_scope: audiencia-servico-carteirinha
+
+# ---------------------------------------------------------------------------
+# Google Cloud: Workload Identity Federation (realm como provedor OIDC)
+# ---------------------------------------------------------------------------
+# O Google confia no issuer https://<keycloak_public_hostname>/realms/cecairbar (discovery e
+# JWKS públicos pelo nginx, certificado válido) e troca tokens deste cliente pelo token da
+# conta de serviço do Google Wallet — sem chave de conta de serviço (README, "Google Cloud").
+# Cliente separado do servico-carteirinha: o token enviado ao Google não tem roles (nem
+# manage-users) e não serve para a Admin API. O segredo vem de
+# secret_keycloak_carteirinha_gcp_client_secret.
+realm_gcp_wif_client:
+  clientId: servico-carteirinha-gcp
+  name: Serviço de Carteirinha (Google Cloud)
+  description: Workload Identity Federation do Google Cloud — tokens só com aud do provedor do pool
+  enabled: true
+  protocol: openid-connect
+  publicClient: false
+  bearerOnly: false
+  clientAuthenticatorType: client-secret
+  serviceAccountsEnabled: true
+  standardFlowEnabled: false
+  implicitFlowEnabled: false
+  directAccessGrantsEnabled: false
+  frontchannelLogout: false
+  # Sem roles no token (nem default-roles).
+  fullScopeAllowed: false
+  attributes:
+    # RS256: algoritmo aceito pelo provedor OIDC do Google.
+    access.token.signed.response.alg: RS256
+
+# aud = audience padrão do provedor do pool (gcp_wif_audience em global_vars/main.yml).
+# O provedor do Google restringe ainda azp == servico-carteirinha-gcp (attribute condition).
+realm_gcp_wif_mappers:
+  - name: audiencia-gcp-wif
+    protocol: openid-connect
+    protocolMapper: oidc-audience-mapper
+    config:
+      included.custom.audience: "{{ gcp_wif_audience }}"
+      access.token.claim: "true"
+      id.token.claim: "false"
+      introspection.token.claim: "false"
+      lightweight.claim: "false"
+
+# ---------------------------------------------------------------------------
+# Aplicações web (keycloak_apps em global_vars/main.yml): DurvalCRM e Booksys (SGB)
+# ---------------------------------------------------------------------------
+# Um cliente confidencial por app com hostname no inventário, clientId = nome do app.
+# Authorization Code + PKCE (ROPC proibido, seção 8.2); redirects e logout só no
+# hostname do app (tasks/keycloak-app-client.yml completa rootUrl e URIs). person_id
+# entra pelo scope padrão do realm. O segredo vem de client_secret_var.
+# Client roles e grupos de cada app ficam em cecairbar-apps.yml.
+realm_app_client:
+  enabled: true
+  protocol: openid-connect
+  publicClient: false
+  bearerOnly: false
+  clientAuthenticatorType: client-secret
+  standardFlowEnabled: true
+  implicitFlowEnabled: false
+  directAccessGrantsEnabled: false
+  serviceAccountsEnabled: false
+  frontchannelLogout: true
+  attributes:
+    pkce.code.challenge.method: S256
+
+# Clientes substituídos, apagados pelo playbook (com as client roles deles). Única remoção que o
+# playbook faz; o cliente sgb deu lugar a booksys em 2026-10-26.
+realm_clients_removidos:
+  - sgb
+
+# Scopes padrão acrescentados a clientes já existentes. O portal (account-console, cliente
+# embutido do Keycloak) foi criado com o realm, antes do scope person_id virar padrão.
+realm_client_default_scopes:
+  account-console:
+    - person_id
+    - audiencia-servico-carteirinha

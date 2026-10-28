@@ -1,0 +1,28 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Keycloak {{ keycloak_version }}
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=exec
+User={{ keycloak_user }}
+Group={{ keycloak_user }}
+EnvironmentFile=/etc/default/keycloak
+ExecStart={{ keycloak_home }}/bin/kc.sh start --optimized
+SuccessExitStatus=143
+LimitNOFILE=102642
+Restart=on-failure
+RestartSec=10
+
+# Endurecimento: /usr, /boot e /etc somente leitura; o Keycloak grava apenas em data/
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,33 @@
+# {{ ansible_managed }}
+# Segredos (senha do banco, admin temporário) vêm de /etc/default/keycloak.
+# Opções de build (db, cache, health, metrics) exigem novo "kc.sh build".
+
+# Banco de dados
+db=postgres
+db-url=jdbc:postgresql://{{ keycloak_db_host }}:{{ postgresql_port }}/{{ keycloak_db_name }}
+db-username={{ keycloak_db_user }}
+
+# Nó único (instalação monolítica, sem cluster)
+cache={{ keycloak_cache }}
+
+# HTTP somente em loopback; TLS terminado no nginx da mesma VM
+http-enabled=true
+http-host={{ keycloak_http_host }}
+http-port={{ keycloak_http_port }}
+http-management-port={{ keycloak_management_port }}
+proxy-headers={{ keycloak_proxy_headers }}
+proxy-trusted-addresses={{ keycloak_proxy_trusted_addresses }}
+
+# Hostname
+hostname={{ keycloak_hostname }}
+hostname-admin={{ keycloak_hostname_admin }}
+hostname-strict=true
+
+# Observabilidade (RNF-006): logs JSON, access log com correlation ID, health e métricas
+log=console
+log-level={{ keycloak_log_level }}
+log-console-output=json
+http-access-log-enabled=true
+http-access-log-pattern={{ keycloak_access_log_pattern }}
+health-enabled=true
+metrics-enabled=true

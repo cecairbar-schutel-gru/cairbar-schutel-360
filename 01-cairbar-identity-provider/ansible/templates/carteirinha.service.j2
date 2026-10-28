@@ -1,0 +1,30 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Serviço de Carteirinha (card-service)
+After=network-online.target postgresql.service keycloak.service
+Wants=network-online.target
+
+[Service]
+Type=exec
+User={{ carteirinha_user }}
+Group={{ carteirinha_user }}
+WorkingDirectory={{ carteirinha_home }}
+EnvironmentFile={{ carteirinha_config_dir }}/carteirinha.env
+ExecStart={{ carteirinha_node_home }}/bin/node --enable-source-maps dist/server.js
+Restart=on-failure
+RestartSec=5
+MemoryMax=384M
+
+# Endurecimento: o serviço não grava em disco (logs vão para o journald).
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

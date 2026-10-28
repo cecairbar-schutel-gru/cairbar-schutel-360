@@ -1,0 +1,181 @@
+---
+# US-AUTH-005: provisiona os objetos do DurvalCRM no realm cecairbar.
+# Nunca cria nem remove o realm e não altera outros clients, roles ou
+# configurações do realm. Idempotente: a segunda execução não reporta mudanças.
+# Roda no controlador (ou no execution environment) e chama a Admin API pelo
+# hostname de administração do Keycloak (o público bloqueia o realm master);
+# nenhuma VM do inventário é acessada. Cada host de webapps é um ambiente: os
+# domínios vêm das variáveis do host (use --limit para um só ambiente).
+- name: Provisionar DurvalCRM no realm cecairbar
+  hosts: webapps
+  connection: local
+  gather_facts: false
+  become: false
+  vars_files:
+    - ../global_vars/main.yml
+    - ../global_vars/vault.yml
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+  module_defaults:
+    group/community.general.keycloak:
+      auth_keycloak_url: "{{ cecairbar_keycloak_admin_url }}"
+      auth_realm: master
+      auth_client_id: admin-cli
+      auth_username: "{{ cecairbar_admin_user }}"
+      auth_password: "{{ cecairbar_admin_password }}"
+      realm: "{{ cecairbar_realm }}"
+
+  pre_tasks:
+    - name: Validar segredos do vault
+      ansible.builtin.assert:
+        that: vault_keycloak_admin_password | default('') | length > 0
+        fail_msg: "vault_keycloak_admin_password não definido: crie global_vars/vault.yml a partir de vault.yml.example"
+        quiet: true
+
+    - name: Verificar se o realm {{ cecairbar_realm }} existe
+      ansible.builtin.uri:
+        url: "{{ cecairbar_keycloak_url }}/realms/{{ cecairbar_realm }}"
+        status_code: [200, 404]
+      register: cecairbar_realm_check
+
+    - name: Exigir realm existente (o playbook não cria realms)
+      ansible.builtin.assert:
+        that: cecairbar_realm_check.status == 200
+        fail_msg: "Realm {{ cecairbar_realm }} não encontrado em {{ cecairbar_keycloak_url }}"
+        quiet: true
+
+  tasks:
+    - name: Criar client {{ cecairbar_api_client_id }} (audience dos tokens)
+      community.general.keycloak_client:
+        client_id: "{{ cecairbar_api_client_id }}"
+        name: DurvalCRM API
+        description: Audience dos tokens do DurvalCRM.
+        protocol: openid-connect
+        public_client: false
+        client_authenticator_type: client-secret
+        standard_flow_enabled: false
+        implicit_flow_enabled: false
+        direct_access_grants_enabled: false
+        # Conta de serviço: o backend lê os usuários do realm (US-ADMIN-001), só leitura.
+        service_accounts_enabled: true
+        authorization_services_enabled: false
+        attributes:
+          oauth2.device.authorization.grant.enabled: "false"
+          oidc.ciba.grant.enabled: "false"
+        state: present
+
+    - name: Permitir à conta de serviço de {{ cecairbar_api_client_id }} só ler usuários, clients e eventos
+      community.general.keycloak_user_rolemapping:
+        service_account_user_client_id: "{{ cecairbar_api_client_id }}"
+        client_id: realm-management
+        roles:
+          - name: view-users
+          - name: view-clients
+          - name: view-events
+        state: present
+
+    # Full scope desligado: o token do SPA leva só as realm roles do DurvalCRM
+    # (escopadas abaixo, em realm_access.roles); o mapper "audiencia-api" põe
+    # durvalcrm-api no aud.
+    - name: Criar client {{ cecairbar_web_client_id }} (SPA, Authorization Code + PKCE)
+      community.general.keycloak_client:
+        client_id: "{{ cecairbar_web_client_id }}"
+        name: DurvalCRM Web
+        description: SPA do DurvalCRM.
+        protocol: openid-connect
+        public_client: true
+        standard_flow_enabled: true
+        implicit_flow_enabled: false
+        direct_access_grants_enabled: false
+        service_accounts_enabled: false
+        full_scope_allowed: false
+        frontchannel_logout: true
+        redirect_uris: "{{ durvalcrm_web_urls | map('regex_replace', '$', '/*') | list }}"
+        web_origins: "{{ durvalcrm_web_urls }}"
+        attributes:
+          pkce.code.challenge.method: S256
+          post.logout.redirect.uris: "{{ durvalcrm_web_urls | map('regex_replace', '$', '/*') | join('##') }}"
+          oauth2.device.authorization.grant.enabled: "false"
+          oidc.ciba.grant.enabled: "false"
+        protocol_mappers:
+          - name: audiencia-api
+            protocol: openid-connect
+            protocolMapper: oidc-audience-mapper
+            config:
+              included.client.audience: "{{ cecairbar_api_client_id }}"
+              access.token.claim: "true"
+              id.token.claim: "false"
+              introspection.token.claim: "true"
+        state: present
+
+    # As realm roles vêm da solução 1 (rode o keycloak-realm.yml dela antes deste playbook).
+    - name: Liberar as realm roles do DurvalCRM no escopo de {{ cecairbar_web_client_id }}
+      community.general.keycloak_client_rolescope:
+        client_id: "{{ cecairbar_web_client_id }}"
+        role_names: "{{ cecairbar_roles }}"
+        state: present
+
+    # Limpeza (26/10/2026): o DurvalCRM deixou de usar caixas autorizados. O mapper
+    # "caixas" de durvalcrm-web e o atributo "caixas" do user profile, criados por
+    # versões anteriores deste playbook, são removidos se ainda existirem; os demais
+    # mappers e atributos do realm ficam intactos.
+    - name: Obter token da Admin API
+      ansible.builtin.uri:
+        url: "{{ cecairbar_keycloak_admin_url }}/realms/master/protocol/openid-connect/token"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          grant_type: password
+          client_id: admin-cli
+          username: "{{ cecairbar_admin_user }}"
+          password: "{{ cecairbar_admin_password }}"
+      register: cecairbar_admin_token
+      no_log: true
+
+    - name: Localizar o client {{ cecairbar_web_client_id }}
+      ansible.builtin.uri:
+        url: "{{ cecairbar_keycloak_admin_url }}/admin/realms/{{ cecairbar_realm }}/clients?clientId={{ cecairbar_web_client_id }}"
+        headers:
+          Authorization: "Bearer {{ cecairbar_admin_token.json.access_token }}"
+      register: cecairbar_web_client
+
+    - name: Ler os mappers de {{ cecairbar_web_client_id }}
+      ansible.builtin.uri:
+        url: "{{ cecairbar_keycloak_admin_url }}/admin/realms/{{ cecairbar_realm }}/clients/{{ cecairbar_web_client.json[0].id }}/protocol-mappers/models"
+        headers:
+          Authorization: "Bearer {{ cecairbar_admin_token.json.access_token }}"
+      register: cecairbar_web_mappers
+
+    - name: Remover o mapper caixas de {{ cecairbar_web_client_id }}
+      ansible.builtin.uri:
+        url: "{{ cecairbar_keycloak_admin_url }}/admin/realms/{{ cecairbar_realm }}/clients/{{ cecairbar_web_client.json[0].id }}/protocol-mappers/models/{{ item.id }}"
+        method: DELETE
+        headers:
+          Authorization: "Bearer {{ cecairbar_admin_token.json.access_token }}"
+        status_code: 204
+      loop: "{{ cecairbar_web_mappers.json | selectattr('name', 'equalto', 'caixas') | list }}"
+      loop_control:
+        label: "{{ item.name }}"
+      changed_when: true
+
+    # O PUT do user profile regrava o perfil inteiro: só o atributo "caixas" sai.
+    - name: Ler user profile do realm
+      ansible.builtin.uri:
+        url: "{{ cecairbar_keycloak_admin_url }}/admin/realms/{{ cecairbar_realm }}/users/profile"
+        headers:
+          Authorization: "Bearer {{ cecairbar_admin_token.json.access_token }}"
+      register: cecairbar_user_profile
+
+    - name: Remover o atributo caixas do user profile
+      ansible.builtin.uri:
+        url: "{{ cecairbar_keycloak_admin_url }}/admin/realms/{{ cecairbar_realm }}/users/profile"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ cecairbar_admin_token.json.access_token }}"
+        body_format: json
+        body: "{{ cecairbar_user_profile.json | combine({'attributes': other_attributes}) }}"
+        status_code: 200
+      vars:
+        other_attributes: "{{ cecairbar_user_profile.json.attributes | rejectattr('name', 'equalto', 'caixas') | list }}"
+      when: cecairbar_user_profile.json.attributes | selectattr('name', 'equalto', 'caixas') | list | length > 0
+      changed_when: true

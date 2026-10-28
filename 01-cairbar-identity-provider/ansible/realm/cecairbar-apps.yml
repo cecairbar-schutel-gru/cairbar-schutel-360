@@ -1,0 +1,48 @@
+# Perfis de acesso e client roles das aplicações web por grupo (seções 8.4 e 8.5).
+# Os perfis de acesso são realm roles atribuídas aos grupos (realm_roles e realm_roles_grupos em
+# realm/cecairbar.yml) e valem para o DurvalCRM e para o SGB:
+#
+#   Perfil         Grupo                    Realm role     DurvalCRM  SGB
+#   SCHUTELISTA    /participantes (padrão)  schutelista    —¹         encomendas, empréstimos, gamificação
+#   OPERADOR       /voluntarios/operadores  operador       sim        empréstimos, devoluções, filas, listas
+#   BIBLIOTECÁRIO  /voluntarios/biblioteca  bibliotecario  —          operador + gestão do acervo
+#   VENDEDOR       /voluntarios/vendas      vendedor       sim        —
+#   PDV            /pdv                     pdv            PDV²       TODO
+#   TESOUREIRO     /tesouraria              tesoureiro     sim        —
+#   ADMINISTRADOR  /administradores         administrador  sim        administração completa
+#   ¹ agendamento de atividades, ainda não construído no DurvalCRM.
+#   ² só o PDV da cantina (vende só produtos da cantina).
+#
+# Os apps leem realm_access.roles (o cliente booksys também tem as client roles booksys.*,
+# abaixo): o DurvalCRM pelo client durvalcrm-web
+# (../../02-durval-crm/ansible/playbooks/keycloak-cecairbar.yml) e o SGB pelo booksys-web
+# (../../03-cairbar-booksys/keycloak), ambos com full scope desligado e só os próprios perfis no
+# escopo. Herança entre perfis (bibliotecário ⊇ operador, administrador ⊇ todos) é regra dos apps.
+#
+# /participantes é o grupo padrão do realm (realm_default_groups): todo usuário novo, inclusive
+# o do autocadastro, entra nele. Os demais perfis são atribuídos por um administrador e se somam
+# ao de participante. Membros de um subgrupo herdam as roles dos grupos acima.
+#
+# realm_app_rbac: client roles de um app, aplicadas por playbooks/keycloak-realm.yml
+# (tasks/keycloak-app-roles.yml) depois dos clientes dos apps; só para apps com hostname no
+# inventário. Só cria e atualiza: roles e atribuições que saem daqui continuam no Keycloak até
+# serem removidas à mão.
+
+# Por clientId: roles do cliente e grupos que as recebem.
+realm_app_rbac:
+  # Cliente booksys (substituiu sgb em 2026-10-26; as roles library.* foram apagadas com ele).
+  booksys:
+    roles:
+      - name: booksys.reader
+        description: Faz empréstimos de livros da biblioteca
+      - name: booksys.operator
+        description: Organiza os empréstimos da biblioteca (atendimento, empréstimos e devoluções)
+      - name: booksys.manager
+        description: Administração completa do Booksys
+    grupos:
+      /participantes:
+        - booksys.reader
+      /voluntarios/operadores:
+        - booksys.operator
+      /administradores:
+        - booksys.manager

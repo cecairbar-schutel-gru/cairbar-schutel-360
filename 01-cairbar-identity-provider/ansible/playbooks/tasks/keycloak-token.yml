@@ -1,0 +1,20 @@
+---
+# Token de administração via Client Credentials (cliente de serviço do realm master).
+# Tokens do master duram 60 s: obtenha um novo antes de cada bloco de chamadas.
+- name: Obter token de administração
+  ansible.builtin.uri:
+    url: "{{ kc_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      grant_type: client_credentials
+      client_id: "{{ keycloak_automation_client_id }}"
+      client_secret: "{{ keycloak_automation_client_secret }}"
+  register: kc_token_response
+  no_log: true
+
+- name: Montar cabeçalhos da Admin API
+  ansible.builtin.set_fact:
+    kc_headers:
+      Authorization: "Bearer {{ kc_token_response.json.access_token }}"
+  no_log: true
