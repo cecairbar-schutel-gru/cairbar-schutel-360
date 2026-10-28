@@ -1,0 +1,13 @@
+---
+- name: Instalar OpenJDK
+  ansible.builtin.apt:
+    name: "{{ java_package }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Validar JAVA_HOME
+  ansible.builtin.stat:
+    path: "{{ java_home }}/bin/java"
+  register: java_bin
+  failed_when: not java_bin.stat.exists

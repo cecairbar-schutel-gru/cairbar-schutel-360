@@ -1,0 +1,216 @@
+---
+# Serviço de Carteirinha (../card-service): Node.js por tarball oficial + systemd, sem
+# containers, atrás do nginx do Keycloak (/api/v1/cards/). O build fica fora do diretório
+# montado no EE: este playbook roda com --ee false. O Google Wallet é acessado por Workload
+# Identity Federation — não há chave de conta de serviço na VM.
+- name: Instalar e configurar o Serviço de Carteirinha
+  hosts: carteirinha
+  become: true
+  vars_files:
+    - ../global_vars/main.yml
+    - "../global_vars/secrets-{{ ambiente }}.yml"
+  vars:
+    required_secrets:
+      - secret_postgresql_carteirinha_password
+      - secret_keycloak_carteirinha_client_secret
+      - secret_keycloak_carteirinha_gcp_client_secret
+      - secret_gcp_wif_provider
+      - secret_google_wallet_issuer_id
+      - secret_google_wallet_service_account_email
+
+  pre_tasks:
+    - name: Verificações iniciais
+      ansible.builtin.import_tasks: tasks/preflight.yml
+
+    - name: Exigir o Keycloak no mesmo host (o nginx dele publica a API)
+      ansible.builtin.assert:
+        that: inventory_hostname in groups['keycloak']
+        fail_msg: "O Serviço de Carteirinha é publicado pelo nginx do Keycloak: coloque-o no mesmo host."
+        quiet: true
+
+    - name: Verificar build local
+      ansible.builtin.stat:
+        path: "{{ carteirinha_source_dir }}/dist/server.js"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      register: carteirinha_local
+
+    - name: Exigir build local
+      ansible.builtin.assert:
+        that: carteirinha_local.stat.exists
+        fail_msg: >-
+          Faltando build: rode "npm ci && npm run build" em card-service/ e execute o playbook
+          com --ee false.
+        quiet: true
+      run_once: true
+
+  tasks:
+    # -----------------------------------------------------------------------
+    # Node.js
+    # -----------------------------------------------------------------------
+    - name: Instalar xz-utils (tarball do Node.js)
+      ansible.builtin.apt:
+        name: xz-utils
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Baixar Node.js {{ carteirinha_node_version }}
+      ansible.builtin.get_url:
+        url: "{{ carteirinha_node_url }}"
+        dest: "/var/tmp/{{ carteirinha_node_url | basename }}"
+        checksum: "sha256:https://nodejs.org/dist/v{{ carteirinha_node_version }}/SHASUMS256.txt"
+        mode: "0644"
+
+    - name: Descompactar Node.js
+      ansible.builtin.unarchive:
+        src: "/var/tmp/{{ carteirinha_node_url | basename }}"
+        dest: /opt
+        remote_src: true
+        owner: root
+        group: root
+        creates: "{{ carteirinha_node_home }}/bin/node"
+      notify: Reiniciar Serviço de Carteirinha
+
+    # -----------------------------------------------------------------------
+    # Usuário, código e configuração
+    # -----------------------------------------------------------------------
+    - name: Criar grupo do serviço
+      ansible.builtin.group:
+        name: "{{ carteirinha_user }}"
+        system: true
+
+    - name: Criar usuário do serviço
+      ansible.builtin.user:
+        name: "{{ carteirinha_user }}"
+        group: "{{ carteirinha_user }}"
+        system: true
+        shell: /usr/sbin/nologin
+        home: "{{ carteirinha_home }}"
+        create_home: false
+
+    # Código de root, só leitura para o serviço.
+    - name: Criar diretórios do serviço
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: root
+        group: "{{ carteirinha_user }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ carteirinha_home }}", mode: "0755" }
+        - { path: "{{ carteirinha_config_dir }}", mode: "0750" }
+
+    - name: Copiar manifesto de dependências
+      ansible.builtin.copy:
+        src: "{{ carteirinha_source_dir }}/{{ item }}"
+        dest: "{{ carteirinha_home }}/{{ item }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - package.json
+        - package-lock.json
+      register: carteirinha_manifest
+      notify: Reiniciar Serviço de Carteirinha
+
+    - name: Verificar dependências instaladas
+      ansible.builtin.stat:
+        path: "{{ carteirinha_home }}/node_modules"
+      register: carteirinha_node_modules
+
+    - name: Instalar dependências de produção
+      ansible.builtin.command:
+        cmd: "{{ carteirinha_node_home }}/bin/npm ci --omit=dev --no-audit --no-fund"
+        chdir: "{{ carteirinha_home }}"
+      environment:
+        PATH: "{{ carteirinha_node_home }}/bin:{{ ansible_env.PATH }}"
+      when: carteirinha_manifest is changed or not carteirinha_node_modules.stat.exists
+      changed_when: true
+      notify: Reiniciar Serviço de Carteirinha
+
+    - name: Copiar código compilado, migrations e imagens do passe
+      ansible.builtin.copy:
+        src: "{{ carteirinha_source_dir }}/{{ item }}/"
+        dest: "{{ carteirinha_home }}/{{ item }}/"
+        owner: root
+        group: root
+        mode: u=rwX,go=rX
+      loop:
+        - dist
+        - migrations
+        - assets
+      notify: Reiniciar Serviço de Carteirinha
+
+    - name: Configurar variáveis de ambiente (segredos)
+      ansible.builtin.template:
+        src: ../templates/carteirinha.env.j2
+        dest: "{{ carteirinha_config_dir }}/carteirinha.env"
+        owner: root
+        group: "{{ carteirinha_user }}"
+        mode: "0640"
+      no_log: true
+      notify: Reiniciar Serviço de Carteirinha
+
+    # Versões anteriores copiavam a chave JSON da conta de serviço; com a federação ela sai da
+    # VM (e deve ser excluída no Google Cloud: README, seção "Google Cloud").
+    - name: Remover chave antiga da conta de serviço do Google Wallet
+      ansible.builtin.file:
+        path: "{{ carteirinha_config_dir }}/google-wallet-sa.json"
+        state: absent
+
+    # -----------------------------------------------------------------------
+    # Banco (migrations versionadas) e serviço
+    # -----------------------------------------------------------------------
+    - name: Aplicar migrations
+      ansible.builtin.shell:
+        cmd: "set -a && . {{ carteirinha_config_dir }}/carteirinha.env && exec {{ carteirinha_node_home }}/bin/node dist/migrate.js"
+        chdir: "{{ carteirinha_home }}"
+      become_user: "{{ carteirinha_user }}"
+      register: carteirinha_migrate
+      changed_when: carteirinha_migrate.stdout is search('^aplicadas:')
+
+    - name: Instalar serviço systemd
+      ansible.builtin.template:
+        src: ../templates/carteirinha.service.j2
+        dest: /etc/systemd/system/carteirinha.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reiniciar Serviço de Carteirinha
+
+    - name: Habilitar e iniciar o Serviço de Carteirinha
+      ansible.builtin.systemd_service:
+        name: carteirinha
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Aplicar reinício pendente
+      ansible.builtin.meta: flush_handlers
+
+    - name: Aguardar o serviço ficar pronto
+      ansible.builtin.uri:
+        url: "http://{{ carteirinha_http_host }}:{{ carteirinha_http_port }}/health"
+      register: carteirinha_health
+      until: carteirinha_health.status == 200
+      retries: 12
+      delay: 5
+
+    # Sem token a API responde 401: confirma a rota do nginx e a validação no backend.
+    - name: Verificar publicação da API pelo proxy
+      ansible.builtin.uri:
+        url: "https://127.0.0.1/api/v1/cards/PER-00000001"
+        headers:
+          Host: "{{ keycloak_public_hostname }}"
+        validate_certs: false
+        status_code: 401
+      changed_when: false
+
+  handlers:
+    - name: Reiniciar Serviço de Carteirinha
+      ansible.builtin.systemd_service:
+        name: carteirinha
+        state: restarted
+        daemon_reload: true

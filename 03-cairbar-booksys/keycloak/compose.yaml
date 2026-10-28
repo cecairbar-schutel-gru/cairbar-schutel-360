@@ -1,0 +1,23 @@
+# Keycloak local para desenvolvimento, com um SMTP de testes. O realm cecairbar e seus perfis
+# precisam ser criados antes do provisionador (README, "Uso local").
+#   podman compose -f keycloak/compose.yaml up -d   (ou docker compose)
+# Console: http://localhost:8180/admin (admin/admin)  |  E-mails: http://localhost:8025
+name: booksys-keycloak
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    depends_on:
+      - mailpit
+
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.31
+    ports:
+      - "8025:8025"

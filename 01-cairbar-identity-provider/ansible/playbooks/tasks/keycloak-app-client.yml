@@ -1,0 +1,44 @@
+---
+# Cria/atualiza o cliente confidencial do app kc_app (item de keycloak_apps) a partir de
+# realm_app_client. O segredo só é regravado na criação ou com
+# -e realm_apps_atualizar_segredo=true (rotação).
+- name: Consultar cliente {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/clients?clientId={{ kc_app.nome | urlencode }}"
+    headers: "{{ kc_headers }}"
+  register: kc_app_client
+
+- name: Criar cliente {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/clients"
+    method: POST
+    headers: "{{ kc_headers }}"
+    body_format: json
+    body: "{{ kc_app_desejado | combine({'secret': lookup('ansible.builtin.vars', kc_app.client_secret_var)}) }}"
+    status_code: 201
+  when: kc_app_client.json | length == 0
+  changed_when: true
+  no_log: true
+
+- name: Ler cliente {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/clients?clientId={{ kc_app.nome | urlencode }}"
+    headers: "{{ kc_headers }}"
+  register: kc_app_client
+
+- name: Atualizar cliente {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/clients/{{ kc_app_client.json[0].id }}"
+    method: PUT
+    headers: "{{ kc_headers }}"
+    body_format: json
+    body: >-
+      {{ kc_app_client.json[0] | combine(kc_app_desejado,
+         {'secret': lookup('ansible.builtin.vars', kc_app.client_secret_var)} if realm_apps_atualizar_segredo | default(false) | bool else {},
+         recursive=true) }}
+    status_code: 204
+  when: >-
+    realm_apps_atualizar_segredo | default(false) | bool or
+    kc_app_client.json[0] | combine(kc_app_desejado, recursive=true) != kc_app_client.json[0]
+  changed_when: true
+  no_log: true

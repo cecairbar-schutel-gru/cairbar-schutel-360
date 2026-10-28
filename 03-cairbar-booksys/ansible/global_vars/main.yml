@@ -1,0 +1,78 @@
+---
+# Variáveis compartilhadas pelos playbooks da stack do Booksys.
+# O Keycloak não é instalado aqui: o realm fica no Keycloak da solução
+# 01-cairbar-identity-provider. Segredos ficam em global_vars/vault.yml (ver vault.yml.example).
+
+# ---------------------------------------------------------------------------
+# Java (Tomcat)
+# ---------------------------------------------------------------------------
+java_package: openjdk-21-jre-headless
+java_home: "/usr/lib/jvm/java-21-openjdk-{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+
+# ---------------------------------------------------------------------------
+# PostgreSQL compartilhado
+# ---------------------------------------------------------------------------
+# Instalado, configurado e com backup pela solução 01-cairbar-identity-provider
+# (playbooks/postgresql.yml). Versão e porta precisam ser as mesmas de lá.
+postgresql_version: 18
+postgresql_port: 5432
+postgresql_conf_dir: "/etc/postgresql/{{ postgresql_version }}/main"
+
+# Só o Tomcat, na mesma VM, acessa o banco.
+postgresql_allowed_cidrs:
+  - 127.0.0.1/32
+  - ::1/128
+
+# O nome precisa ser único no servidor compartilhado (01 usa keycloak e carteirinha,
+# 02 usa durvalcrm).
+postgresql_databases:
+  - name: booksys
+    owner: booksys
+    password: "{{ vault_postgresql_booksys_password }}"
+
+# ---------------------------------------------------------------------------
+# Apache Tomcat
+# ---------------------------------------------------------------------------
+tomcat_version: 11.0.27
+tomcat_major: "{{ tomcat_version.split('.')[0] }}"
+tomcat_download_url: "https://archive.apache.org/dist/tomcat/tomcat-{{ tomcat_major }}/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz"
+tomcat_checksum: "sha512:{{ tomcat_download_url }}.sha512"
+# Instância própria do SGB: o Tomcat do DurvalCRM (02-durval-crm) roda na mesma VM com
+# serviço tomcat, usuário tomcat, /opt/tomcat, /var/lib/tomcat e portas 8080/8005.
+# Nenhum desses valores pode coincidir com os de lá.
+tomcat_service: tomcat-sgb
+tomcat_user: tomcat-sgb
+
+# CATALINA_HOME guarda os binários (trocado a cada upgrade); CATALINA_BASE
+# guarda conf, webapps e logs da instância e sobrevive aos upgrades.
+tomcat_home: /opt/tomcat-sgb
+tomcat_base: /var/lib/tomcat-sgb
+
+# Só em loopback: o acesso externo passa pelo nginx (sgb_upstream).
+tomcat_http_address: 127.0.0.1
+tomcat_http_port: 8081
+tomcat_shutdown_port: 8006
+tomcat_catalina_opts: "-Xms512m -Xmx2g -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom"
+
+# ---------------------------------------------------------------------------
+# nginx: site do Sistema de Biblioteca (playbooks/nginx.yml)
+# ---------------------------------------------------------------------------
+# O nginx é instalado por 01-cairbar-identity-provider; aqui só entra o site
+# sites-available/sgb.conf (mapa em ../../esquema-navegacao.png).
+# O hostname precisa ser o mesmo de dominio_sgb no inventário da solução 01
+# (redirect URIs do cliente booksys do realm).
+sgb_hostname: cairbar-sgb.20-55-96-192.nip.io
+sgb_upstream: "{{ tomcat_http_address }}:{{ tomcat_http_port }}"
+sgb_client_max_body_size: 10m
+
+# selfsigned: certificado gerado na VM (dev/testes).
+# letsencrypt: certbot (webroot compartilhado); exige o hostname apontando para a VM.
+# O Let's Encrypt limita certificados por domínio e o nip.io é compartilhado: se a
+# emissão falhar por limite, use selfsigned.
+sgb_tls_mode: letsencrypt
+sgb_letsencrypt_email: "cecairbarschutelgru@cecairbar.org.br"
+
+# Mesmos valores da solução 01 (keycloak_tls_dir e nginx_acme_webroot).
+nginx_tls_dir: /etc/nginx/tls
+nginx_tls_selfsigned_days: 825
+nginx_acme_webroot: /var/www/acme

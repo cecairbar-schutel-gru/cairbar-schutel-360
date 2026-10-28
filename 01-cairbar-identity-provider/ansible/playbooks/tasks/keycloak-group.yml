@@ -1,0 +1,32 @@
+---
+# Cria o grupo kc_group_path (ex.: /voluntarios/biblioteca) se não existir.
+# O grupo pai precisa ter sido criado antes.
+- name: Consultar grupo {{ kc_group_path }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/group-by-path{{ kc_group_path | urlencode }}"
+    headers: "{{ kc_headers }}"
+    status_code: [200, 404]
+  register: kc_group
+
+- name: Criar grupo {{ kc_group_path }}
+  when: kc_group.status == 404
+  vars:
+    kc_group_parent: "{{ kc_group_path | dirname }}"
+  block:
+    - name: Consultar grupo pai de {{ kc_group_path }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/group-by-path{{ kc_group_parent | urlencode }}"
+        headers: "{{ kc_headers }}"
+      register: kc_group_parent_rep
+      when: kc_group_parent != '/'
+
+    - name: Criar grupo {{ kc_group_path }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/groups{{ '' if kc_group_parent == '/' else '/' ~ kc_group_parent_rep.json.id ~ '/children' }}"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body:
+          name: "{{ kc_group_path | basename }}"
+        status_code: 201
+      changed_when: true

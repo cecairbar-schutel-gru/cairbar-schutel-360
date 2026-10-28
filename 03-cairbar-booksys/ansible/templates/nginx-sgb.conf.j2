@@ -1,0 +1,48 @@
+# {{ ansible_managed }}
+# Site do Sistema de Biblioteca (SGB) no nginx instalado por 01-cairbar-identity-provider
+# (mapa em ../../esquema-navegacao.png): {{ sgb_hostname }} -> Tomcat. O login é no realm
+# cecairbar, pelo hostname do Keycloak publicado pela solução 01.
+# Log, correlation ID e snippets cairbar-*.conf vêm da base da solução 01.
+
+upstream sgb {
+    server {{ sgb_upstream }};
+    keepalive 16;
+}
+
+# HTTP: desafio ACME e redirect para HTTPS.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ sgb_hostname }};
+    access_log /var/log/nginx/sgb-access.log cairbar_json;
+
+    include snippets/cairbar-acme.conf;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    # Sintaxe compatível com o nginx do Ubuntu 22.04/24.04 (< 1.25).
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name {{ sgb_hostname }};
+
+    ssl_certificate     {{ nginx_tls_cert }};
+    ssl_certificate_key {{ nginx_tls_key }};
+    include snippets/cairbar-tls.conf;
+{% if nginx_tls_cert.startswith("/etc/letsencrypt/") %}
+    add_header Strict-Transport-Security "max-age=31536000" always;
+{% endif %}
+
+    access_log /var/log/nginx/sgb-access.log cairbar_json;
+    include snippets/cairbar-proxy.conf;
+
+    # Uploads (capas, obras digitais e importações do acervo).
+    client_max_body_size {{ sgb_client_max_body_size }};
+
+    location / {
+        proxy_pass http://sgb;
+    }
+}

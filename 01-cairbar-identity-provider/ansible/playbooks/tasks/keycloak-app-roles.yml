@@ -1,0 +1,90 @@
+---
+# Cria/atualiza as client roles do app kc_app e as atribui aos grupos, conforme
+# kc_app_rbac (realm_app_rbac[clientId] em realm/cecairbar-apps.yml). Os grupos já existem
+# (realm_groups). Não remove nada.
+- name: Validar roles e grupos de {{ kc_app.nome }}
+  ansible.builtin.assert:
+    that:
+      - kc_app_rbac.grupos.values() | flatten | difference(kc_app_rbac.roles | map(attribute='name')) | length == 0
+      - kc_app_rbac.grupos.keys() | difference(realm_groups) | length == 0
+    fail_msg: >-
+      realm_app_rbac.{{ kc_app.nome }}: toda role atribuída precisa estar em roles e todo grupo
+      em realm_groups
+    quiet: true
+
+- name: Localizar cliente {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/clients?clientId={{ kc_app.nome | urlencode }}"
+    headers: "{{ kc_headers }}"
+  register: kc_rbac_client
+  failed_when: kc_rbac_client.json | length == 0
+
+- name: Listar client roles de {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/clients/{{ kc_rbac_client.json[0].id }}/roles"
+    headers: "{{ kc_headers }}"
+  register: kc_rbac_roles
+
+- name: Criar client roles ausentes de {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/clients/{{ kc_rbac_client.json[0].id }}/roles"
+    method: POST
+    headers: "{{ kc_headers }}"
+    body_format: json
+    body: "{{ item }}"
+    status_code: 201
+  loop: "{{ kc_app_rbac.roles | rejectattr('name', 'in', kc_rbac_roles.json | map(attribute='name') | list) | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  changed_when: true
+
+- name: Atualizar descrição das client roles de {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/clients/{{ kc_rbac_client.json[0].id }}/roles/{{ item.name | urlencode }}"
+    method: PUT
+    headers: "{{ kc_headers }}"
+    body_format: json
+    body: "{{ kc_role_atual | combine(item) }}"
+    status_code: 204
+  vars:
+    kc_role_atual: "{{ kc_rbac_roles.json | selectattr('name', '==', item.name) | first | default({}) }}"
+  loop: "{{ kc_app_rbac.roles }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - kc_role_atual | length > 0
+    - kc_role_atual.description | default('') != item.description
+  changed_when: true
+
+- name: Localizar grupos com roles de {{ kc_app.nome }}
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/group-by-path{{ item | urlencode }}"
+    headers: "{{ kc_headers }}"
+  loop: "{{ kc_app_rbac.grupos.keys() | list }}"
+  register: kc_rbac_groups
+
+- name: Listar roles de {{ kc_app.nome }} disponíveis para os grupos
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/groups/{{ item.json.id }}/role-mappings/clients/{{ kc_rbac_client.json[0].id }}/available"
+    headers: "{{ kc_headers }}"
+  loop: "{{ kc_rbac_groups.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  register: kc_rbac_available
+
+# item.item.item = caminho do grupo; "available" só lista roles que o grupo ainda não tem.
+- name: Atribuir roles de {{ kc_app.nome }} aos grupos
+  ansible.builtin.uri:
+    url: "{{ kc_admin_url }}/groups/{{ item.item.json.id }}/role-mappings/clients/{{ kc_rbac_client.json[0].id }}"
+    method: POST
+    headers: "{{ kc_headers }}"
+    body_format: json
+    body: "{{ kc_rbac_missing }}"
+    status_code: 204
+  vars:
+    kc_rbac_missing: "{{ item.json | selectattr('name', 'in', kc_app_rbac.grupos[item.item.item]) | list }}"
+  loop: "{{ kc_rbac_available.results }}"
+  loop_control:
+    label: "{{ item.item.item }}: {{ kc_app_rbac.grupos[item.item.item] | join(', ') }}"
+  when: kc_rbac_missing | length > 0
+  changed_when: true

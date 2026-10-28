@@ -1,0 +1,165 @@
+---
+- name: Instalar e configurar PostgreSQL
+  hosts: postgresql
+  become: true
+  vars_files:
+    - ../global_vars/main.yml
+    - "../global_vars/secrets-{{ ambiente }}.yml"
+  vars:
+    required_secrets:
+      - secret_postgresql_keycloak_password
+      - secret_postgresql_carteirinha_password
+
+  pre_tasks:
+    - name: Verificações iniciais
+      ansible.builtin.import_tasks: tasks/preflight.yml
+
+  tasks:
+    - name: Instalar pré-requisitos
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - acl
+          - python3-debian
+          - python3-psycopg2
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Instalar chave do repositório PGDG
+      ansible.builtin.get_url:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        dest: /etc/apt/keyrings/postgresql.asc
+        mode: "0644"
+
+    - name: Adicionar repositório PGDG
+      ansible.builtin.deb822_repository:
+        name: pgdg
+        types: deb
+        uris: https://apt.postgresql.org/pub/repos/apt
+        suites: "{{ ansible_facts['distribution_release'] }}-pgdg"
+        components: main
+        signed_by: /etc/apt/keyrings/postgresql.asc
+
+    - name: Remover formato antigo do repositório PGDG
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/pgdg.list
+        state: absent
+
+    - name: Instalar PostgreSQL {{ postgresql_version }}
+      ansible.builtin.apt:
+        name:
+          - "postgresql-{{ postgresql_version }}"
+          - "postgresql-client-{{ postgresql_version }}"
+        state: present
+        update_cache: true
+
+    - name: Aplicar configuração do servidor
+      ansible.builtin.template:
+        src: ../templates/postgresql.conf.j2
+        dest: "{{ postgresql_conf_dir }}/conf.d/90-plataforma.conf"
+        owner: postgres
+        group: postgres
+        mode: "0644"
+      notify: Reiniciar PostgreSQL
+
+    - name: Remover configuração legada do DurvalCRM
+      ansible.builtin.file:
+        path: "{{ postgresql_conf_dir }}/conf.d/90-durvalcrm.conf"
+        state: absent
+      notify: Reiniciar PostgreSQL
+
+    - name: Liberar acesso das aplicações no pg_hba.conf
+      community.postgresql.postgresql_pg_hba:
+        dest: "{{ postgresql_conf_dir }}/pg_hba.conf"
+        contype: host
+        databases: "{{ item.0.name }}"
+        users: "{{ item.0.owner }}"
+        address: "{{ item.1 }}"
+        method: scram-sha-256
+        owner: postgres
+        group: postgres
+        mode: "0640"
+      loop: "{{ postgresql_databases | product(postgresql_allowed_cidrs) | list }}"
+      loop_control:
+        label: "{{ item.0.name }} <- {{ item.1 }}"
+      notify: Recarregar PostgreSQL
+
+    - name: Garantir PostgreSQL ativo
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+        enabled: true
+
+    - name: Aplicar alterações pendentes de configuração
+      ansible.builtin.meta: flush_handlers
+
+    - name: Criar usuários das aplicações
+      community.postgresql.postgresql_user:
+        name: "{{ item.owner }}"
+        password: "{{ item.password }}"
+        login_port: "{{ postgresql_port }}"
+      loop: "{{ postgresql_databases }}"
+      loop_control:
+        label: "{{ item.owner }}"
+      become_user: postgres
+      no_log: true
+
+    - name: Criar bancos das aplicações
+      community.postgresql.postgresql_db:
+        name: "{{ item.name }}"
+        owner: "{{ item.owner }}"
+        encoding: UTF-8
+        lc_collate: C.UTF-8
+        lc_ctype: C.UTF-8
+        template: template0
+        login_port: "{{ postgresql_port }}"
+      loop: "{{ postgresql_databases }}"
+      loop_control:
+        label: "{{ item.name }}"
+      become_user: postgres
+
+    - name: Criar diretório de backups
+      ansible.builtin.file:
+        path: "{{ postgresql_backup_dir }}"
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: "0700"
+
+    - name: Instalar script de backup
+      ansible.builtin.template:
+        src: ../templates/postgresql-backup.sh.j2
+        dest: /usr/local/bin/postgresql-backup.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Instalar serviço e timer de backup
+      ansible.builtin.template:
+        src: "../templates/{{ item }}.j2"
+        dest: "/etc/systemd/system/{{ item }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - postgresql-backup.service
+        - postgresql-backup.timer
+
+    - name: Habilitar timer de backup
+      ansible.builtin.systemd_service:
+        name: postgresql-backup.timer
+        state: started
+        enabled: true
+        daemon_reload: true
+
+  handlers:
+    - name: Reiniciar PostgreSQL
+      ansible.builtin.service:
+        name: postgresql
+        state: restarted
+
+    - name: Recarregar PostgreSQL
+      ansible.builtin.service:
+        name: postgresql
+        state: reloaded

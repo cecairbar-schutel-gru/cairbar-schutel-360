@@ -1,0 +1,821 @@
+---
+# Aplica a configuração versionada do realm (realm/cecairbar.yml) pela Admin
+# REST API do Keycloak local, autenticando com Client Credentials. Idempotente:
+# cria o que falta e só atualiza o que difere; só remove os clientes de
+# realm_clients_removidos.
+- name: Configurar realm do Keycloak
+  hosts: keycloak
+  become: false
+  vars_files:
+    - ../global_vars/main.yml
+    - "../global_vars/secrets-{{ ambiente }}.yml"
+    - ../realm/cecairbar.yml
+    - ../realm/cecairbar-apps.yml
+  vars:
+    # Mais o segredo de cada app de keycloak_apps com hostname no inventário.
+    required_secrets: >-
+      {{ ['secret_keycloak_automation_client_secret',
+          'secret_keycloak_carteirinha_client_secret',
+          'secret_keycloak_carteirinha_gcp_client_secret',
+          'secret_gcp_wif_provider']
+         + keycloak_apps | selectattr('hostname') | map(attribute='client_secret_var') | list }}
+    # Login com Google é opcional: só é configurado com os dois segredos do cliente OAuth.
+    realm_google_login_habilitado: >-
+      {{ secret_keycloak_google_client_id | default('') | length > 0 and
+         secret_keycloak_google_client_secret | default('') | length > 0 }}
+    kc_url: "http://127.0.0.1:{{ keycloak_http_port }}"
+    kc_admin_url: "{{ kc_url }}/admin/realms/{{ keycloak_realm }}"
+    # A Admin API devolve o segredo mascarado: só é regravado na criação do IdP ou
+    # com -e realm_google_atualizar_segredo=true (rotação).
+    realm_google_atualizar_segredo: false
+
+  pre_tasks:
+    - name: Verificações iniciais
+      ansible.builtin.import_tasks: tasks/preflight.yml
+
+    - name: Exigir os dois segredos do login com Google, ou nenhum
+      ansible.builtin.assert:
+        that: >-
+          (secret_keycloak_google_client_id | default('') | length > 0) ==
+          (secret_keycloak_google_client_secret | default('') | length > 0)
+        fail_msg: "Defina secret_keycloak_google_client_id e secret_keycloak_google_client_secret juntos (ou deixe ambos vazios)."
+        quiet: true
+
+  tasks:
+    - name: Obter token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    # -----------------------------------------------------------------------
+    # Realm
+    # -----------------------------------------------------------------------
+    - name: Consultar realm {{ keycloak_realm }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}"
+        headers: "{{ kc_headers }}"
+        status_code: [200, 404]
+      register: kc_realm
+
+    - name: Criar realm {{ keycloak_realm }}
+      ansible.builtin.uri:
+        url: "{{ kc_url }}/admin/realms"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body:
+          realm: "{{ keycloak_realm }}"
+          enabled: true
+        status_code: 201
+      when: kc_realm.status == 404
+      changed_when: true
+
+    - name: Ler configurações atuais do realm
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}"
+        headers: "{{ kc_headers }}"
+      register: kc_realm
+
+    - name: Atualizar configurações do realm
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ realm_settings }}"
+        status_code: 204
+      when: kc_realm.json | combine(realm_settings) != kc_realm.json
+      changed_when: true
+
+    # -----------------------------------------------------------------------
+    # User Profile (seção 7.3)
+    # -----------------------------------------------------------------------
+    - name: Ler User Profile atual
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/users/profile"
+        headers: "{{ kc_headers }}"
+      register: kc_user_profile
+
+    # O PUT substitui o User Profile inteiro: atributos e grupos que não estão em
+    # realm/cecairbar.yml (ex.: "caixas" de 02-durval-crm) são mantidos depois dos nossos.
+    # Como no resto do playbook, nada é removido: itens retirados do arquivo saem à mão.
+    - name: Montar User Profile com os atributos de outras soluções
+      ansible.builtin.set_fact:
+        kc_user_profile_desejado: >-
+          {{ realm_user_profile | combine({
+               'attributes': realm_user_profile.attributes
+                 + (kc_user_profile.json.attributes | default([])
+                    | rejectattr('name', 'in', realm_user_profile.attributes | map(attribute='name') | list)
+                    | list),
+               'groups': realm_user_profile.groups
+                 + (kc_user_profile.json.groups | default([])
+                    | rejectattr('name', 'in', realm_user_profile.groups | map(attribute='name') | list)
+                    | list)
+             }) }}
+
+    - name: Atualizar User Profile
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/users/profile"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ kc_user_profile_desejado }}"
+        status_code: 200
+      when: kc_user_profile.json != kc_user_profile_desejado
+      changed_when: true
+
+    # -----------------------------------------------------------------------
+    # Realm roles (seção 8.3)
+    # -----------------------------------------------------------------------
+    - name: Consultar realm roles
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/roles/{{ item.name | urlencode }}"
+        headers: "{{ kc_headers }}"
+        status_code: [200, 404]
+      loop: "{{ realm_roles }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: kc_roles
+
+    - name: Criar realm roles ausentes
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/roles"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ item.item }}"
+        status_code: 201
+      loop: "{{ kc_roles.results | selectattr('status', '==', 404) }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      changed_when: true
+
+    - name: Atualizar descrição das realm roles
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/roles/{{ item.item.name | urlencode }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ item.json | combine(item.item) }}"
+        status_code: 204
+      loop: "{{ kc_roles.results | selectattr('status', '==', 200) }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      when: item.json.description | default('') != item.item.description
+      changed_when: true
+
+    # -----------------------------------------------------------------------
+    # Grupos (seção 8.5)
+    # -----------------------------------------------------------------------
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    - name: Criar grupos
+      ansible.builtin.include_tasks: tasks/keycloak-group.yml
+      loop: "{{ realm_groups }}"
+      loop_control:
+        loop_var: kc_group_path
+
+    - name: Validar realm roles dos grupos
+      ansible.builtin.assert:
+        that:
+          - realm_roles_grupos.values() | flatten | difference(realm_roles | map(attribute='name')) | length == 0
+          - realm_roles_grupos.keys() | difference(realm_groups) | length == 0
+        fail_msg: >-
+          realm_roles_grupos: toda role atribuída precisa estar em realm_roles e todo grupo
+          em realm_groups
+        quiet: true
+
+    - name: Localizar grupos com realm roles
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/group-by-path{{ item | urlencode }}"
+        headers: "{{ kc_headers }}"
+      loop: "{{ realm_roles_grupos.keys() | list }}"
+      register: kc_realm_role_groups
+
+    # Num realm novo, criar os grupos pode passar dos 60 s do token.
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    - name: Listar realm roles disponíveis para os grupos
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/groups/{{ item.json.id }}/role-mappings/realm/available"
+        headers: "{{ kc_headers }}"
+      loop: "{{ kc_realm_role_groups.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      register: kc_realm_role_available
+
+    # item.item.item = caminho do grupo; "available" só lista roles que o grupo ainda não tem.
+    - name: Atribuir realm roles aos grupos
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/groups/{{ item.item.json.id }}/role-mappings/realm"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ kc_realm_role_missing }}"
+        status_code: 204
+      vars:
+        kc_realm_role_missing: "{{ item.json | selectattr('name', 'in', realm_roles_grupos[item.item.item]) | list }}"
+      loop: "{{ kc_realm_role_available.results }}"
+      loop_control:
+        label: "{{ item.item.item }}: {{ realm_roles_grupos[item.item.item] | join(', ') }}"
+      when: kc_realm_role_missing | length > 0
+      changed_when: true
+
+    # -----------------------------------------------------------------------
+    # Claim person_id em todo token (seção 8.6)
+    # -----------------------------------------------------------------------
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    - name: Listar client scopes
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/client-scopes"
+        headers: "{{ kc_headers }}"
+      register: kc_scopes
+
+    # Só cria: alterações no mapper de um scope existente devem ser feitas à mão
+    # (ou removendo o scope) — TODO avaliar keycloak-config-cli para drift completo.
+    - name: Criar client scope {{ realm_person_id_scope }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/client-scopes"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body:
+          name: "{{ realm_person_id_scope }}"
+          description: Identificador da pessoa (personId) como claim person_id
+          protocol: openid-connect
+          attributes:
+            include.in.token.scope: "false"
+            display.on.consent.screen: "false"
+          protocolMappers:
+            - name: person_id
+              protocol: openid-connect
+              protocolMapper: oidc-usermodel-attribute-mapper
+              config:
+                user.attribute: personId
+                claim.name: person_id
+                jsonType.label: String
+                multivalued: "false"
+                aggregate.attrs: "false"
+                access.token.claim: "true"
+                id.token.claim: "true"
+                userinfo.token.claim: "true"
+                introspection.token.claim: "true"
+        status_code: 201
+      when: realm_person_id_scope not in (kc_scopes.json | map(attribute='name'))
+      changed_when: true
+
+    - name: Localizar client scope {{ realm_person_id_scope }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/client-scopes"
+        headers: "{{ kc_headers }}"
+      register: kc_scopes
+
+    - name: Listar client scopes padrão do realm
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/default-default-client-scopes"
+        headers: "{{ kc_headers }}"
+      register: kc_default_scopes
+
+    # Scope padrão (default) é aplicado automaticamente a todo cliente novo.
+    - name: Tornar {{ realm_person_id_scope }} scope padrão dos clientes
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/default-default-client-scopes/{{ kc_person_scope_id }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        status_code: 204
+      vars:
+        kc_person_scope_id: "{{ (kc_scopes.json | selectattr('name', '==', realm_person_id_scope) | first).id }}"
+      when: realm_person_id_scope not in (kc_default_scopes.json | map(attribute='name'))
+      changed_when: true
+
+    # -----------------------------------------------------------------------
+    # Login com Google: fluxo de primeiro login e identity provider
+    # -----------------------------------------------------------------------
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    # Só com o cliente OAuth do Google definido em secrets-<ambiente>.yml (opcional).
+    - name: Configurar login com Google
+      when: realm_google_login_habilitado | bool
+      block:
+        - name: Listar fluxos de autenticação
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/authentication/flows"
+            headers: "{{ kc_headers }}"
+          register: kc_flows
+
+        - name: Criar fluxo {{ realm_first_broker_login_flow.alias }}
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/authentication/flows"
+            method: POST
+            headers: "{{ kc_headers }}"
+            body_format: json
+            body:
+              alias: "{{ realm_first_broker_login_flow.alias }}"
+              description: "{{ realm_first_broker_login_flow.description }}"
+              providerId: basic-flow
+              topLevel: true
+              builtIn: false
+            status_code: 201
+          when: realm_first_broker_login_flow.alias not in (kc_flows.json | map(attribute='alias'))
+          changed_when: true
+
+        - name: Listar execuções do fluxo {{ realm_first_broker_login_flow.alias }}
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/authentication/flows/{{ realm_first_broker_login_flow.alias | urlencode }}/executions"
+            headers: "{{ kc_headers }}"
+          register: kc_flow_executions
+
+        # Execuções novas entram no fim do fluxo, como DISABLED; a ordem segue a lista.
+        - name: Adicionar execuções ausentes ao fluxo
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/authentication/flows/{{ realm_first_broker_login_flow.alias | urlencode }}/executions/execution"
+            method: POST
+            headers: "{{ kc_headers }}"
+            body_format: json
+            body:
+              provider: "{{ item.provider }}"
+            status_code: 201
+          loop: "{{ realm_first_broker_login_flow.executions }}"
+          loop_control:
+            label: "{{ item.provider }}"
+          when: item.provider not in (kc_flow_executions.json | map(attribute='providerId') | list)
+          changed_when: true
+
+        - name: Ler execuções do fluxo {{ realm_first_broker_login_flow.alias }}
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/authentication/flows/{{ realm_first_broker_login_flow.alias | urlencode }}/executions"
+            headers: "{{ kc_headers }}"
+          register: kc_flow_executions
+
+        - name: Ajustar requisito das execuções do fluxo
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/authentication/flows/{{ realm_first_broker_login_flow.alias | urlencode }}/executions"
+            method: PUT
+            headers: "{{ kc_headers }}"
+            body_format: json
+            body: "{{ kc_execution | combine({'requirement': item.requirement}) }}"
+            status_code: 204
+          vars:
+            kc_execution: "{{ kc_flow_executions.json | selectattr('providerId', '==', item.provider) | first }}"
+          loop: "{{ realm_first_broker_login_flow.executions }}"
+          loop_control:
+            label: "{{ item.provider }}: {{ item.requirement }}"
+          when: kc_execution.requirement != item.requirement
+          changed_when: true
+
+        - name: Consultar identity provider {{ realm_google_idp.alias }}
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/identity-provider/instances/{{ realm_google_idp.alias }}"
+            headers: "{{ kc_headers }}"
+            status_code: [200, 404]
+          register: kc_google_idp
+
+        - name: Criar identity provider {{ realm_google_idp.alias }}
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/identity-provider/instances"
+            method: POST
+            headers: "{{ kc_headers }}"
+            body_format: json
+            body: "{{ realm_google_idp | combine({'config': kc_google_credentials}, recursive=true) }}"
+            status_code: 201
+          vars:
+            kc_google_credentials:
+              clientId: "{{ secret_keycloak_google_client_id }}"
+              clientSecret: "{{ secret_keycloak_google_client_secret }}"
+          when: kc_google_idp.status == 404
+          changed_when: true
+          no_log: true
+
+        # Compara com o segredo mascarado ("**********"), que o Keycloak mantém no PUT.
+        - name: Atualizar identity provider {{ realm_google_idp.alias }}
+          ansible.builtin.uri:
+            url: "{{ kc_admin_url }}/identity-provider/instances/{{ realm_google_idp.alias }}"
+            method: PUT
+            headers: "{{ kc_headers }}"
+            body_format: json
+            body: "{{ kc_google_idp.json | combine(realm_google_idp, {'config': kc_google_credentials}, recursive=true) }}"
+            status_code: 204
+          vars:
+            kc_google_credentials:
+              clientId: "{{ secret_keycloak_google_client_id }}"
+              clientSecret: "{{ secret_keycloak_google_client_secret if realm_google_atualizar_segredo | bool else '**********' }}"
+          when: >-
+            kc_google_idp.status == 200 and
+            (realm_google_atualizar_segredo | bool or
+             kc_google_idp.json | combine(realm_google_idp, {'config': kc_google_credentials}, recursive=true) != kc_google_idp.json)
+          changed_when: true
+          no_log: true
+
+    # -----------------------------------------------------------------------
+    # Serviço de Carteirinha: cliente de serviço, audiência e scopes do portal
+    # -----------------------------------------------------------------------
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    - name: Consultar cliente {{ realm_card_service_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients?clientId={{ realm_card_service_client.clientId | urlencode }}"
+        headers: "{{ kc_headers }}"
+      register: kc_card_client
+
+    - name: Criar cliente {{ realm_card_service_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ realm_card_service_client | combine({'secret': secret_keycloak_carteirinha_client_secret}) }}"
+        status_code: 201
+      when: kc_card_client.json | length == 0
+      changed_when: true
+      no_log: true
+
+    - name: Ler cliente {{ realm_card_service_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients?clientId={{ realm_card_service_client.clientId | urlencode }}"
+        headers: "{{ kc_headers }}"
+      register: kc_card_client
+
+    # O segredo só é regravado com -e realm_carteirinha_atualizar_segredo=true (rotação).
+    - name: Atualizar cliente {{ realm_card_service_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients/{{ kc_card_client.json[0].id }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: >-
+          {{ kc_card_client.json[0] | combine(realm_card_service_client,
+             {'secret': secret_keycloak_carteirinha_client_secret} if realm_carteirinha_atualizar_segredo | default(false) | bool else {}) }}
+        status_code: 204
+      when: >-
+        realm_carteirinha_atualizar_segredo | default(false) | bool or
+        kc_card_client.json[0] | combine(realm_card_service_client) != kc_card_client.json[0]
+      changed_when: true
+      no_log: true
+
+    - name: Localizar service account e cliente realm-management
+      ansible.builtin.uri:
+        url: "{{ item }}"
+        headers: "{{ kc_headers }}"
+      loop:
+        - "{{ kc_admin_url }}/clients/{{ kc_card_client.json[0].id }}/service-account-user"
+        - "{{ kc_admin_url }}/clients?clientId=realm-management"
+      register: kc_card_lookup
+
+    - name: Listar roles do realm-management disponíveis para a service account
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/users/{{ kc_card_sa_id }}/role-mappings/clients/{{ kc_realm_management_id }}/available"
+        headers: "{{ kc_headers }}"
+      vars:
+        kc_card_sa_id: "{{ kc_card_lookup.results[0].json.id }}"
+        kc_realm_management_id: "{{ kc_card_lookup.results[1].json[0].id }}"
+      register: kc_card_available_roles
+
+    - name: Conceder roles do realm-management à service account
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/users/{{ kc_card_lookup.results[0].json.id }}/role-mappings/clients/{{ kc_card_lookup.results[1].json[0].id }}"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ kc_card_missing_roles }}"
+        status_code: 204
+      vars:
+        kc_card_missing_roles: "{{ kc_card_available_roles.json | selectattr('name', 'in', realm_card_service_roles) | list }}"
+      when: kc_card_missing_roles | length > 0
+      changed_when: true
+
+    - name: Listar client scopes
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/client-scopes"
+        headers: "{{ kc_headers }}"
+      register: kc_scopes
+
+    # Só cria, como o scope person_id.
+    - name: Criar client scope {{ realm_card_audience_scope }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/client-scopes"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body:
+          name: "{{ realm_card_audience_scope }}"
+          description: Audience do Serviço de Carteirinha
+          protocol: openid-connect
+          attributes:
+            include.in.token.scope: "false"
+            display.on.consent.screen: "false"
+          protocolMappers:
+            - name: audiencia-servico-carteirinha
+              protocol: openid-connect
+              protocolMapper: oidc-audience-mapper
+              config:
+                included.client.audience: "{{ realm_card_service_client.clientId }}"
+                access.token.claim: "true"
+                id.token.claim: "false"
+                introspection.token.claim: "true"
+                lightweight.claim: "true"
+        status_code: 201
+      when: realm_card_audience_scope not in (kc_scopes.json | map(attribute='name'))
+      changed_when: true
+
+    - name: Ler client scopes
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/client-scopes"
+        headers: "{{ kc_headers }}"
+      register: kc_scopes
+
+    - name: Localizar clientes que recebem scopes padrão
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients?clientId={{ item | urlencode }}"
+        headers: "{{ kc_headers }}"
+      loop: "{{ realm_client_default_scopes.keys() | list }}"
+      register: kc_scope_clients
+
+    - name: Listar scopes padrão desses clientes
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients/{{ item.json[0].id }}/default-client-scopes"
+        headers: "{{ kc_headers }}"
+      loop: "{{ kc_scope_clients.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      register: kc_client_default_scopes
+
+    - name: Acrescentar scopes padrão aos clientes
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients/{{ item.0.item.json[0].id }}/default-client-scopes/{{ kc_scope_id }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        status_code: 204
+      vars:
+        kc_scope_id: "{{ (kc_scopes.json | selectattr('name', '==', item.1) | first).id }}"
+      # item.0: escopos atuais de um cliente (item.0.item.item = clientId); item.1: scope desejado.
+      loop: "{{ kc_client_default_scopes.results | product(realm_client_default_scopes.values() | flatten | unique) | list }}"
+      loop_control:
+        label: "{{ item.0.item.item }}: {{ item.1 }}"
+      when:
+        - item.1 in realm_client_default_scopes[item.0.item.item]
+        - item.1 not in (item.0.json | map(attribute='name'))
+      changed_when: true
+
+    # -----------------------------------------------------------------------
+    # Google Cloud: cliente do Workload Identity Federation
+    # -----------------------------------------------------------------------
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    - name: Exigir provedor do pool no formato completo
+      ansible.builtin.assert:
+        that: gcp_wif_provider is match('^projects/[0-9]+/locations/global/workloadIdentityPools/[a-z0-9-]+/providers/[a-z0-9-]+$')
+        fail_msg: "secret_gcp_wif_provider deve seguir projects/<número>/locations/global/workloadIdentityPools/<pool>/providers/<provedor>"
+        quiet: true
+
+    - name: Consultar cliente {{ realm_gcp_wif_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients?clientId={{ realm_gcp_wif_client.clientId | urlencode }}"
+        headers: "{{ kc_headers }}"
+      register: kc_gcp_client
+
+    - name: Criar cliente {{ realm_gcp_wif_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ realm_gcp_wif_client | combine({'secret': secret_keycloak_carteirinha_gcp_client_secret}) }}"
+        status_code: 201
+      when: kc_gcp_client.json | length == 0
+      changed_when: true
+      no_log: true
+
+    - name: Ler cliente {{ realm_gcp_wif_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients?clientId={{ realm_gcp_wif_client.clientId | urlencode }}"
+        headers: "{{ kc_headers }}"
+      register: kc_gcp_client
+
+    # O segredo só é regravado com -e realm_carteirinha_gcp_atualizar_segredo=true (rotação).
+    - name: Atualizar cliente {{ realm_gcp_wif_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients/{{ kc_gcp_client.json[0].id }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: >-
+          {{ kc_gcp_client.json[0] | combine(realm_gcp_wif_client,
+             {'secret': secret_keycloak_carteirinha_gcp_client_secret} if realm_carteirinha_gcp_atualizar_segredo | default(false) | bool else {},
+             recursive=true) }}
+        status_code: 204
+      when: >-
+        realm_carteirinha_gcp_atualizar_segredo | default(false) | bool or
+        kc_gcp_client.json[0] | combine(realm_gcp_wif_client, recursive=true) != kc_gcp_client.json[0]
+      changed_when: true
+      no_log: true
+
+    - name: Listar mappers do cliente {{ realm_gcp_wif_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients/{{ kc_gcp_client.json[0].id }}/protocol-mappers/models"
+        headers: "{{ kc_headers }}"
+      register: kc_gcp_mappers
+
+    - name: Criar mappers ausentes do cliente {{ realm_gcp_wif_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients/{{ kc_gcp_client.json[0].id }}/protocol-mappers/models"
+        method: POST
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ item }}"
+        status_code: 201
+      loop: "{{ realm_gcp_wif_mappers }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: item.name not in (kc_gcp_mappers.json | map(attribute='name'))
+      changed_when: true
+
+    # Mantém a audience em sincronia com o provedor (ex.: troca de pool).
+    - name: Atualizar mappers do cliente {{ realm_gcp_wif_client.clientId }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients/{{ kc_gcp_client.json[0].id }}/protocol-mappers/models/{{ kc_mapper.id }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ kc_mapper | combine(item, recursive=true) }}"
+        status_code: 204
+      vars:
+        kc_mapper: "{{ kc_gcp_mappers.json | selectattr('name', '==', item.name) | first }}"
+      loop: "{{ realm_gcp_wif_mappers }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - item.name in (kc_gcp_mappers.json | map(attribute='name'))
+        - kc_mapper | combine(item, recursive=true) != kc_mapper
+      changed_when: true
+
+    # -----------------------------------------------------------------------
+    # Aplicações web (DurvalCRM, SGB): clientes confidenciais por hostname
+    # -----------------------------------------------------------------------
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    - name: Localizar clientes substituídos
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients?clientId={{ item | urlencode }}"
+        headers: "{{ kc_headers }}"
+      loop: "{{ realm_clients_removidos }}"
+      register: kc_clients_removidos
+
+    - name: Apagar clientes substituídos
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/clients/{{ item.json[0].id }}"
+        method: DELETE
+        headers: "{{ kc_headers }}"
+        status_code: 204
+      loop: "{{ kc_clients_removidos.results | selectattr('json') | list }}"
+      loop_control:
+        label: "{{ item.item }}"
+      changed_when: true
+
+    - name: Configurar clientes das aplicações web
+      ansible.builtin.include_tasks: tasks/keycloak-app-client.yml
+      loop: "{{ keycloak_apps | selectattr('hostname') | list }}"
+      loop_control:
+        loop_var: kc_app
+        label: "{{ kc_app.nome }}"
+      vars:
+        kc_app_desejado: "{{ realm_app_client | combine(kc_app_urls, recursive=true) }}"
+        kc_app_urls:
+          clientId: "{{ kc_app.nome }}"
+          name: "{{ kc_app.descricao }}"
+          rootUrl: "https://{{ kc_app.hostname }}"
+          baseUrl: /
+          redirectUris:
+            - "https://{{ kc_app.hostname }}/*"
+          attributes:
+            post.logout.redirect.uris: "https://{{ kc_app.hostname }}/*"
+
+    # Perfis de acesso: client roles dos apps nos grupos (realm/cecairbar-apps.yml).
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    - name: Configurar roles e grupos das aplicações web
+      ansible.builtin.include_tasks: tasks/keycloak-app-roles.yml
+      loop: "{{ keycloak_apps | selectattr('hostname') | selectattr('nome', 'in', realm_app_rbac) | list }}"
+      loop_control:
+        loop_var: kc_app
+        label: "{{ kc_app.nome }}"
+      vars:
+        kc_app_rbac: "{{ realm_app_rbac[kc_app.nome] }}"
+
+    # -----------------------------------------------------------------------
+    # Perfil participante: grupo padrão e migração dos relacionamentos antigos
+    # -----------------------------------------------------------------------
+    - name: Renovar token de administração
+      ansible.builtin.include_tasks: tasks/keycloak-token.yml
+
+    - name: Localizar grupos padrão e grupo do participante
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/group-by-path{{ item | urlencode }}"
+        headers: "{{ kc_headers }}"
+      loop: "{{ (realm_default_groups + [realm_relationships_grupo]) | unique }}"
+      register: kc_participante_groups
+
+    - name: Listar grupos padrão do realm
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/default-groups"
+        headers: "{{ kc_headers }}"
+      register: kc_default_groups
+
+    # Todo usuário novo (autocadastro ou Admin API) entra nesses grupos.
+    - name: Tornar grupos padrão do realm
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/default-groups/{{ item.json.id }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        status_code: 204
+      loop: "{{ kc_participante_groups.results | selectattr('item', 'in', realm_default_groups) | list }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: item.json.id not in (kc_default_groups.json | map(attribute='id'))
+      changed_when: true
+
+    # Idempotente: depois da migração a busca não encontra mais ninguém. Sem saída (PII).
+    - name: Buscar usuários com relacionamentos antigos
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/users?q={{ ('relationships:' ~ item) | urlencode }}&briefRepresentation=false&max=10000"
+        headers: "{{ kc_headers }}"
+      loop: "{{ realm_relationships_migracao.keys() | list }}"
+      register: kc_rel_busca
+      no_log: true
+
+    - name: Selecionar usuários a migrar
+      ansible.builtin.set_fact:
+        kc_rel_usuarios: "{{ kc_rel_busca.results | map(attribute='json') | flatten | unique(attribute='id') | list }}"
+      no_log: true
+
+    # O PUT reenvia todos os atributos: com o User Profile, os ausentes seriam removidos.
+    - name: Trocar relacionamentos antigos por PARTICIPANT
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/users/{{ item.id }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body: "{{ item | combine({'attributes': item.attributes | combine({'relationships': kc_rel_novos})}) }}"
+        status_code: [204, 400]
+      vars:
+        kc_rel_atuais: "{{ item.attributes.relationships | default([]) }}"
+        kc_rel_antigos: "{{ realm_relationships_migracao.keys() | list }}"
+        kc_rel_novos: >-
+          {{ (kc_rel_atuais | difference(kc_rel_antigos)
+              + kc_rel_atuais | intersect(kc_rel_antigos) | map('extract', realm_relationships_migracao) | list)
+             | unique | list }}
+      loop: "{{ kc_rel_usuarios }}"
+      register: kc_rel_migracao
+      changed_when: kc_rel_migracao.status == 204
+      no_log: true
+
+    - name: Incluir usuários migrados no grupo {{ realm_relationships_grupo }}
+      ansible.builtin.uri:
+        url: "{{ kc_admin_url }}/users/{{ item.item.id }}/groups/{{ kc_participante_group_id }}"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        status_code: 204
+      vars:
+        kc_participante_group_id: >-
+          {{ (kc_participante_groups.results | selectattr('item', '==', realm_relationships_grupo) | first).json.id }}
+      loop: "{{ kc_rel_migracao.results | default([]) | selectattr('status', '==', 204) | list }}"
+      changed_when: true
+      no_log: true
+
+    # Só o id interno do Keycloak (sem PII). Causa comum: perfil incompleto (nome/sobrenome).
+    - name: Avisar usuários não migrados
+      ansible.builtin.debug:
+        msg: >-
+          Relacionamentos não migrados (User Profile inválido), ids:
+          {{ kc_rel_migracao.results | selectattr('status', '==', 400) | map(attribute='item.id') | join(', ') }}
+      when: kc_rel_migracao.results | default([]) | selectattr('status', '==', 400) | list | length > 0
+
+    # -----------------------------------------------------------------------
+    # Verificação pelo proxy público
+    # -----------------------------------------------------------------------
+    - name: Verificar discovery OIDC do realm pelo proxy
+      ansible.builtin.uri:
+        url: "https://127.0.0.1/realms/{{ keycloak_realm }}/.well-known/openid-configuration"
+        headers:
+          Host: "{{ keycloak_public_hostname }}"
+        validate_certs: false
+      register: kc_discovery
+      failed_when: kc_discovery.json.issuer != keycloak_hostname ~ '/realms/' ~ keycloak_realm
+      tags: [proxy]
+
+    # O Google busca o JWKS pela internet; o provedor do pool só aceita chaves publicadas aqui.
+    - name: Verificar JWKS do realm pelo proxy
+      ansible.builtin.uri:
+        url: "https://127.0.0.1/realms/{{ keycloak_realm }}/protocol/openid-connect/certs"
+        headers:
+          Host: "{{ keycloak_public_hostname }}"
+        validate_certs: false
+      register: kc_jwks
+      failed_when: kc_jwks.json['keys'] | selectattr('alg', 'equalto', 'RS256') | list | length == 0
+      tags: [proxy]

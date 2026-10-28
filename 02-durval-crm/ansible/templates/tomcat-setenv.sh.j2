@@ -1,0 +1,15 @@
+#!/bin/sh
+# {{ ansible_managed }}
+JAVA_HOME="{{ java_home }}"
+CATALINA_OPTS="{{ tomcat_catalina_opts }}"
+UMASK=0027
+
+# Configuração do DurvalCRM (backend/README.md, seção Configuração).
+export DURVALCRM_DB_URL="jdbc:postgresql://localhost:{{ postgresql_port }}/{{ durvalcrm_db_name }}"
+export DURVALCRM_DB_USER="{{ durvalcrm_db_user }}"
+export DURVALCRM_DB_PASSWORD="{{ vault_postgresql_durvalcrm_password }}"
+export DURVALCRM_KEYCLOAK_ISSUER="{{ cecairbar_keycloak_url }}/realms/{{ cecairbar_realm }}"
+{% if durvalcrm_data_simulada | default('') %}
+# Só para testes em DEV: data simulada do relógio da aplicação (-e durvalcrm_data_simulada=AAAA-MM-DD).
+export DURVALCRM_DATA_SIMULADA="{{ durvalcrm_data_simulada }}"
+{% endif %}

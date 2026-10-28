@@ -1,0 +1,139 @@
+---
+- name: Instalar e configurar Apache Tomcat
+  hosts: tomcat
+  become: true
+  vars_files:
+    - ../global_vars/main.yml
+    - ../global_vars/vault.yml
+  vars:
+    tomcat_install_dir: "/opt/apache-tomcat-{{ tomcat_version }}"
+    required_secrets:
+      - vault_postgresql_durvalcrm_password
+
+  pre_tasks:
+    - name: Verificações iniciais
+      ansible.builtin.import_tasks: tasks/preflight.yml
+
+  tasks:
+    - name: Instalar Java
+      ansible.builtin.import_tasks: tasks/java.yml
+
+    - name: Criar grupo do Tomcat
+      ansible.builtin.group:
+        name: "{{ tomcat_user }}"
+        system: true
+
+    - name: Criar usuário do Tomcat
+      ansible.builtin.user:
+        name: "{{ tomcat_user }}"
+        group: "{{ tomcat_user }}"
+        system: true
+        shell: /usr/sbin/nologin
+        home: "{{ tomcat_base }}"
+        create_home: false
+
+    - name: Baixar Apache Tomcat {{ tomcat_version }}
+      ansible.builtin.get_url:
+        url: "{{ tomcat_download_url }}"
+        dest: "/var/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz"
+        checksum: "{{ tomcat_checksum }}"
+        mode: "0644"
+
+    # Binários pertencem ao root; o grupo tomcat só tem leitura/execução.
+    - name: Descompactar Apache Tomcat (CATALINA_HOME)
+      ansible.builtin.unarchive:
+        src: "/var/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz"
+        dest: /opt
+        remote_src: true
+        owner: root
+        group: "{{ tomcat_user }}"
+        creates: "{{ tomcat_install_dir }}/bin/catalina.sh"
+
+    - name: Apontar {{ tomcat_home }} para a versão instalada
+      ansible.builtin.file:
+        src: "{{ tomcat_install_dir }}"
+        dest: "{{ tomcat_home }}"
+        state: link
+        force: true
+      notify: Reiniciar Tomcat
+
+    - name: Criar estrutura do CATALINA_BASE
+      ansible.builtin.file:
+        path: "{{ tomcat_base }}/{{ item }}"
+        state: directory
+        owner: "{{ tomcat_user }}"
+        group: "{{ tomcat_user }}"
+        mode: "0750"
+      loop: ["", bin, conf, lib, logs, temp, webapps, work]
+
+    - name: Listar configuração padrão do Tomcat
+      ansible.builtin.find:
+        paths: "{{ tomcat_install_dir }}/conf"
+        file_type: file
+      register: tomcat_default_conf
+
+    # force: false preserva arquivos já existentes (ex.: tomcat-users.xml editado).
+    - name: Copiar configuração padrão para o CATALINA_BASE
+      ansible.builtin.copy:
+        src: "{{ item.path }}"
+        dest: "{{ tomcat_base }}/conf/{{ item.path | basename }}"
+        remote_src: true
+        force: false
+        owner: "{{ tomcat_user }}"
+        group: "{{ tomcat_user }}"
+        mode: "0640"
+      loop: "{{ tomcat_default_conf.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      notify: Reiniciar Tomcat
+
+    - name: Configurar server.xml
+      ansible.builtin.template:
+        src: ../templates/tomcat-server.xml.j2
+        dest: "{{ tomcat_base }}/conf/server.xml"
+        owner: "{{ tomcat_user }}"
+        group: "{{ tomcat_user }}"
+        mode: "0640"
+      notify: Reiniciar Tomcat
+
+    - name: Configurar setenv.sh
+      ansible.builtin.template:
+        src: ../templates/tomcat-setenv.sh.j2
+        dest: "{{ tomcat_base }}/bin/setenv.sh"
+        owner: root
+        group: "{{ tomcat_user }}"
+        mode: "0750"
+      no_log: true
+      notify: Reiniciar Tomcat
+
+    - name: Instalar serviço systemd
+      ansible.builtin.template:
+        src: ../templates/tomcat.service.j2
+        dest: /etc/systemd/system/tomcat.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reiniciar Tomcat
+
+    - name: Habilitar e iniciar Tomcat
+      ansible.builtin.systemd_service:
+        name: tomcat
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Aplicar reinício pendente
+      ansible.builtin.meta: flush_handlers
+
+    - name: Aguardar Tomcat aceitar conexões
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ tomcat_http_port }}"
+        timeout: 120
+
+  handlers:
+    - name: Reiniciar Tomcat
+      ansible.builtin.systemd_service:
+        name: tomcat
+        state: restarted
+        daemon_reload: true

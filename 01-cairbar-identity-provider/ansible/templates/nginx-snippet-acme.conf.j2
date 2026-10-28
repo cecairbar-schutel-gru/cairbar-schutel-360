@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+# Desafio HTTP-01 do certbot (webroot compartilhado por todos os sites da VM).
+location ^~ /.well-known/acme-challenge/ {
+    root {{ nginx_acme_webroot }};
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Migrações versionadas das extensões do realm cecairbar. Nunca altere um changeSet aplicado:
+     crie um novo. -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <!-- Sequência do personId (PER-00000001). Começa depois do maior personId já atribuído. -->
+    <changeSet author="cecairbar" id="0001-sequencia-person-id" dbms="postgresql">
+        <sql>CREATE SEQUENCE IF NOT EXISTS cecairbar_person_id_seq AS BIGINT MINVALUE 1 MAXVALUE 99999999 NO CYCLE</sql>
+        <sql>SELECT setval('cecairbar_person_id_seq',
+            COALESCE((SELECT MAX(CAST(SUBSTRING(ua.value FROM 5) AS BIGINT)) FROM user_attribute ua
+                      WHERE ua.name = 'personId' AND ua.value ~ '^PER-[0-9]{8}$'), 0) + 1, false)</sql>
+    </changeSet>
+</databaseChangeLog>

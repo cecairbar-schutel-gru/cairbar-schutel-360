@@ -1,0 +1,12 @@
+---
+# Stack completa do DurvalCRM. O Keycloak e o nginx são da solução 01-cairbar-identity-provider,
+# que precisa rodar antes; os objetos do DurvalCRM no realm cecairbar ficam em
+# keycloak-cecairbar.yml (executado à parte).
+- name: PostgreSQL
+  ansible.builtin.import_playbook: postgresql.yml
+
+- name: Apache Tomcat
+  ansible.builtin.import_playbook: tomcat.yml
+
+- name: Site do DurvalCRM no nginx
+  ansible.builtin.import_playbook: nginx.yml

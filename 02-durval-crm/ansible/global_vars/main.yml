@@ -1,0 +1,123 @@
+---
+# Variáveis compartilhadas pelos playbooks da stack do DurvalCRM.
+# Segredos ficam em global_vars/vault.yml (ver vault.yml.example).
+
+# ---------------------------------------------------------------------------
+# Java (Tomcat)
+# ---------------------------------------------------------------------------
+java_package: openjdk-21-jre-headless
+java_home: "/usr/lib/jvm/java-21-openjdk-{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+
+# ---------------------------------------------------------------------------
+# PostgreSQL compartilhado
+# ---------------------------------------------------------------------------
+# Instalado, configurado e com backup pela solução 01-cairbar-identity-provider
+# (playbooks/postgresql.yml). Versão e porta precisam ser as mesmas de lá.
+postgresql_version: 18
+postgresql_port: 5432
+postgresql_conf_dir: "/etc/postgresql/{{ postgresql_version }}/main"
+
+# Só o Tomcat, na mesma VM, acessa o banco.
+postgresql_local_cidrs:
+  - 127.0.0.1/32
+  - ::1/128
+
+# O nome precisa ser único no servidor compartilhado (01 usa keycloak e carteirinha,
+# 03 usa booksys).
+postgresql_databases:
+  - name: durvalcrm
+    owner: durvalcrm
+    password: "{{ vault_postgresql_durvalcrm_password }}"
+    allowed_cidrs: "{{ postgresql_local_cidrs }}"
+
+# ---------------------------------------------------------------------------
+# Realm cecairbar: objetos do DurvalCRM (playbooks/keycloak-cecairbar.yml)
+# ---------------------------------------------------------------------------
+# O Keycloak não é instalado por estes playbooks. O realm já existe e não é
+# exclusivo do DurvalCRM: o playbook só cria/atualiza os clients e o escopo
+# das roles abaixo (e remove o antigo mapper/atributo "caixas"), chamando a
+# Admin API.
+cecairbar_realm: cecairbar
+# Domínios por host no inventário (dominio_publico, dominio_admin, dominio_durvalcrm).
+cecairbar_keycloak_url: "https://{{ dominio_publico }}"
+# Hostname de administração (console e realm master); o público bloqueia /realms/master.
+# Usado para o token de administração e a Admin API.
+cecairbar_keycloak_admin_url: "https://{{ dominio_admin }}"
+
+# Usuário do realm master com permissão de administrar o realm cecairbar.
+cecairbar_admin_user: admin
+cecairbar_admin_password: "{{ vault_keycloak_admin_password }}"
+
+cecairbar_web_client_id: durvalcrm-web
+cecairbar_api_client_id: durvalcrm-api
+
+# URLs do SPA neste ambiente (sem barra no final). Cada URL vira redirect URI
+# e post-logout redirect URI ("<url>/*") e web origin ("<url>").
+# Sobrescreva por ambiente (group_vars do inventário ou -e).
+durvalcrm_web_urls:
+  - "https://{{ durvalcrm_hostname }}"
+
+# Realm roles do DurvalCRM (Spec §2). São criadas e atribuídas aos grupos do realm pela solução 1
+# (01-cairbar-identity-provider/ansible/realm/cecairbar.yml); este playbook só as libera no escopo
+# de durvalcrm-web. schutelista entra quando o agendamento de atividades existir (devplan/13-activities).
+# pdv (grupo /pdv) só opera o PDV da cantina.
+cecairbar_roles:
+  - operador
+  - vendedor
+  - pdv
+  - tesoureiro
+  - administrador
+
+
+# ---------------------------------------------------------------------------
+# Apache Tomcat
+# ---------------------------------------------------------------------------
+tomcat_version: 11.0.27
+tomcat_major: "{{ tomcat_version.split('.')[0] }}"
+tomcat_download_url: "https://archive.apache.org/dist/tomcat/tomcat-{{ tomcat_major }}/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz"
+tomcat_checksum: "sha512:{{ tomcat_download_url }}.sha512"
+tomcat_user: tomcat
+
+# CATALINA_HOME guarda os binários (trocado a cada upgrade); CATALINA_BASE
+# guarda conf, webapps e logs da instância e sobrevive aos upgrades.
+tomcat_home: /opt/tomcat
+tomcat_base: /var/lib/tomcat
+
+# O Tomcat do SGB (03-cairbar-booksys) roda na mesma VM em 8081/8006 (serviço tomcat-sgb).
+tomcat_http_address: 0.0.0.0
+tomcat_http_port: 8080
+tomcat_shutdown_port: 8005
+tomcat_catalina_opts: "-Xms512m -Xmx2g -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom"
+
+# ---------------------------------------------------------------------------
+# Aplicação DurvalCRM (playbooks/durvalcrm-app.yml)
+# ---------------------------------------------------------------------------
+# WAR (API + SPA) gerado com "mvn clean verify" em ../backend antes do playbook (que roda com --ee false:
+# ../backend não é visível no execution environment). Implantado como ROOT.
+durvalcrm_war: "{{ playbook_dir }}/../../backend/target/ROOT.war"
+# Banco e usuário criados por playbooks/postgresql.yml (postgresql_databases).
+durvalcrm_db_name: durvalcrm
+durvalcrm_db_user: durvalcrm
+
+# ---------------------------------------------------------------------------
+# nginx: site do DurvalCRM (playbooks/nginx.yml)
+# ---------------------------------------------------------------------------
+# O nginx é instalado por 01-cairbar-identity-provider; aqui só entra o site
+# sites-available/durvalcrm.conf (mapa em ../../esquema-navegacao.png).
+# O hostname precisa ser o mesmo de dominio_durvalcrm no inventário da solução 01
+# (redirect URIs do cliente durvalcrm do realm).
+durvalcrm_hostname: "{{ dominio_durvalcrm }}"
+durvalcrm_upstream: "127.0.0.1:{{ tomcat_http_port }}"
+durvalcrm_client_max_body_size: 10m
+
+# selfsigned: certificado gerado na VM (dev/testes).
+# letsencrypt: certbot (webroot compartilhado); exige o hostname apontando para a VM.
+# O Let's Encrypt limita certificados por domínio e o nip.io é compartilhado: se a
+# emissão falhar por limite, use selfsigned.
+durvalcrm_tls_mode: letsencrypt
+durvalcrm_letsencrypt_email: "cecairbarschutelgru@cecairbar.org.br"
+
+# Mesmos valores da solução 01 (keycloak_tls_dir e nginx_acme_webroot).
+nginx_tls_dir: /etc/nginx/tls
+nginx_tls_selfsigned_days: 825
+nginx_acme_webroot: /var/www/acme

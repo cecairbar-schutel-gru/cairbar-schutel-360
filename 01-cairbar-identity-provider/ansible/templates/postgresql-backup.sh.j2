@@ -1,0 +1,18 @@
+#!/bin/sh
+# {{ ansible_managed }}
+# Backup lógico (pg_dump -Fc) de todos os bancos do servidor, com retenção em dias.
+# Inclui os bancos criados pelas demais soluções (02-durval-crm, 03-cairbar-booksys).
+# Restauração: ver ansible/README.md ("Backup e restauração").
+set -eu
+umask 077
+
+dir={{ postgresql_backup_dir }}
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+
+for db in $(psql --port={{ postgresql_port }} -XAtc "SELECT datname FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres' ORDER BY datname"); do
+    pg_dump --port={{ postgresql_port }} --format=custom --file="$dir/$db-$stamp.dump.partial" "$db"
+    mv "$dir/$db-$stamp.dump.partial" "$dir/$db-$stamp.dump"
+done
+
+find "$dir" -maxdepth 1 -name '*.dump' -mtime +{{ postgresql_backup_retention_days }} -delete
+find "$dir" -maxdepth 1 -name '*.dump.partial' -mmin +360 -delete

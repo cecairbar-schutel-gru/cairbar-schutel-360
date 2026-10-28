@@ -1,0 +1,310 @@
+---
+# Instalação nativa (tarball oficial + systemd), sem containers, atrás de nginx com TLS.
+- name: Instalar e configurar Keycloak
+  hosts: keycloak
+  become: true
+  vars_files:
+    - ../global_vars/main.yml
+    - "../global_vars/secrets-{{ ambiente }}.yml"
+  vars:
+    required_secrets:
+      - secret_postgresql_keycloak_password
+      - secret_keycloak_admin_password
+      - secret_keycloak_automation_client_secret
+    keycloak_install_dir: "/opt/keycloak-{{ keycloak_version }}"
+
+  pre_tasks:
+    - name: Verificações iniciais
+      ansible.builtin.import_tasks: tasks/preflight.yml
+
+    # O JAR é gerado fora do Ansible (theme/) e fica fora do diretório montado no
+    # container do EE: este playbook roda com --ee false.
+    - name: Verificar JAR do tema gerado localmente
+      ansible.builtin.stat:
+        path: "{{ keycloak_theme_jar }}"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      register: keycloak_theme_local
+
+    - name: Exigir JAR do tema
+      ansible.builtin.assert:
+        that: keycloak_theme_local.stat.exists
+        fail_msg: >-
+          Tema não encontrado em {{ keycloak_theme_jar }}: rode "npm ci && npm run build-keycloak-theme"
+          em theme/ e execute o playbook com --ee false (o container do EE não enxerga ../theme).
+        quiet: true
+      run_once: true
+
+    - name: Verificar JAR das extensões gerado localmente
+      ansible.builtin.stat:
+        path: "{{ keycloak_extensions_jar }}"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      register: keycloak_extensions_local
+
+    - name: Exigir JAR das extensões
+      ansible.builtin.assert:
+        that: keycloak_extensions_local.stat.exists
+        fail_msg: >-
+          Extensões não encontradas em {{ keycloak_extensions_jar }}: rode "mvn package" em
+          keycloak-extensions/ e execute o playbook com --ee false.
+        quiet: true
+      run_once: true
+
+  tasks:
+    - name: Instalar Java
+      ansible.builtin.import_tasks: tasks/java.yml
+
+    - name: Criar grupo do Keycloak
+      ansible.builtin.group:
+        name: "{{ keycloak_user }}"
+        system: true
+
+    - name: Criar usuário do Keycloak
+      ansible.builtin.user:
+        name: "{{ keycloak_user }}"
+        group: "{{ keycloak_user }}"
+        system: true
+        shell: /usr/sbin/nologin
+        home: "{{ keycloak_home }}"
+        create_home: false
+
+    - name: Baixar Keycloak {{ keycloak_version }}
+      ansible.builtin.get_url:
+        url: "{{ keycloak_download_url }}"
+        dest: "/var/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+        checksum: "{{ keycloak_checksum }}"
+        mode: "0644"
+
+    - name: Descompactar Keycloak
+      ansible.builtin.unarchive:
+        src: "/var/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+        dest: /opt
+        remote_src: true
+        owner: "{{ keycloak_user }}"
+        group: "{{ keycloak_user }}"
+        creates: "{{ keycloak_install_dir }}/bin/kc.sh"
+      register: keycloak_unpacked
+
+    - name: Apontar {{ keycloak_home }} para a versão instalada
+      ansible.builtin.file:
+        src: "{{ keycloak_install_dir }}"
+        dest: "{{ keycloak_home }}"
+        state: link
+        force: true
+      notify: Reiniciar Keycloak
+
+    - name: Configurar keycloak.conf
+      ansible.builtin.template:
+        src: ../templates/keycloak.conf.j2
+        dest: "{{ keycloak_install_dir }}/conf/keycloak.conf"
+        owner: "{{ keycloak_user }}"
+        group: "{{ keycloak_user }}"
+        mode: "0640"
+      register: keycloak_conf
+      notify: Reiniciar Keycloak
+
+    - name: Configurar variáveis de ambiente (segredos)
+      ansible.builtin.template:
+        src: ../templates/keycloak.env.j2
+        dest: /etc/default/keycloak
+        owner: root
+        group: root
+        mode: "0600"
+      notify: Reiniciar Keycloak
+
+    # Tema login/account gerado em theme/ (npm run build-keycloak-theme).
+    # Providers só entram no Keycloak otimizado após novo "kc.sh build".
+    - name: Instalar tema {{ keycloak_theme_name }}
+      ansible.builtin.copy:
+        src: "{{ keycloak_theme_jar }}"
+        dest: "{{ keycloak_install_dir }}/providers/{{ keycloak_theme_name }}-theme.jar"
+        owner: "{{ keycloak_user }}"
+        group: "{{ keycloak_user }}"
+        mode: "0644"
+      register: keycloak_theme
+      notify: Reiniciar Keycloak
+
+    # Event listener cecairbar-provisionamento e changelog da sequência do personId
+    # (aplicado pelo Keycloak na inicialização).
+    - name: Instalar extensões do realm
+      ansible.builtin.copy:
+        src: "{{ keycloak_extensions_jar }}"
+        dest: "{{ keycloak_install_dir }}/providers/cecairbar-keycloak-extensions.jar"
+        owner: "{{ keycloak_user }}"
+        group: "{{ keycloak_user }}"
+        mode: "0644"
+      register: keycloak_extensions
+      notify: Reiniciar Keycloak
+
+    - name: Gerar build otimizado do Keycloak
+      ansible.builtin.command:
+        cmd: "{{ keycloak_install_dir }}/bin/kc.sh build"
+      become_user: "{{ keycloak_user }}"
+      environment:
+        JAVA_HOME: "{{ java_home }}"
+      when: >-
+        keycloak_unpacked is changed or keycloak_conf is changed or
+        keycloak_theme is changed or keycloak_extensions is changed
+      changed_when: true
+      notify: Reiniciar Keycloak
+
+    - name: Instalar serviço systemd
+      ansible.builtin.template:
+        src: ../templates/keycloak.service.j2
+        dest: /etc/systemd/system/keycloak.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reiniciar Keycloak
+
+    - name: Habilitar e iniciar Keycloak
+      ansible.builtin.systemd_service:
+        name: keycloak
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Aplicar reinício pendente
+      ansible.builtin.meta: flush_handlers
+
+    - name: Aguardar Keycloak ficar pronto
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ keycloak_management_port }}/health/ready"
+        status_code: 200
+      register: keycloak_health
+      until: keycloak_health.status == 200
+      retries: 30
+      delay: 10
+
+    # As variáveis KC_BOOTSTRAP_* só valem na primeira inicialização. Em uma
+    # instalação já inicializada, o cliente de automação é criado com bootstrap-admin.
+    - name: Verificar cliente de automação no realm master
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ keycloak_http_port }}/realms/master/protocol/openid-connect/token"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          grant_type: client_credentials
+          client_id: "{{ keycloak_automation_client_id }}"
+          client_secret: "{{ keycloak_automation_client_secret }}"
+        status_code: [200, 401]
+      register: keycloak_automation_token
+      no_log: true
+
+    - name: Criar cliente de automação no realm master
+      when: keycloak_automation_token.status == 401
+      block:
+        - name: Parar Keycloak para o bootstrap do cliente
+          ansible.builtin.systemd_service:
+            name: keycloak
+            state: stopped
+
+        - name: Executar bootstrap-admin service
+          ansible.builtin.command:
+            cmd: >-
+              {{ keycloak_home }}/bin/kc.sh bootstrap-admin service --optimized --no-prompt
+              --client-id {{ keycloak_automation_client_id }}
+              --client-secret:env KC_BOOTSTRAP_ADMIN_CLIENT_SECRET
+          become_user: "{{ keycloak_user }}"
+          environment:
+            JAVA_HOME: "{{ java_home }}"
+            KC_DB_PASSWORD: "{{ keycloak_db_password }}"
+            KC_BOOTSTRAP_ADMIN_CLIENT_SECRET: "{{ keycloak_automation_client_secret }}"
+          changed_when: true
+          no_log: true
+
+        - name: Iniciar Keycloak após o bootstrap
+          ansible.builtin.systemd_service:
+            name: keycloak
+            state: started
+
+        - name: Aguardar Keycloak ficar pronto após o bootstrap
+          ansible.builtin.uri:
+            url: "http://127.0.0.1:{{ keycloak_management_port }}/health/ready"
+            status_code: 200
+          register: keycloak_health
+          until: keycloak_health.status == 200
+          retries: 30
+          delay: 10
+
+    # Com hostname próprio da console, o realm master (login da console e issuer dos tokens
+    # de administração) responde só nesse hostname: o domínio público bloqueia o master.
+    - name: Definir frontendUrl esperado do realm master
+      ansible.builtin.set_fact:
+        keycloak_master_frontend_url: >-
+          {{ keycloak_hostname_admin if keycloak_admin_console_publicada and keycloak_admin_public_hostname else '' }}
+
+    - name: Obter token de administração para o realm master
+      ansible.builtin.import_tasks: tasks/keycloak-token.yml
+      vars:
+        kc_url: "http://127.0.0.1:{{ keycloak_http_port }}"
+
+    - name: Ler realm master
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ keycloak_http_port }}/admin/realms/master"
+        headers: "{{ kc_headers }}"
+      register: keycloak_master_realm
+
+    - name: Configurar frontendUrl do realm master
+      when: (keycloak_master_realm.json.attributes.frontendUrl | default('')) != keycloak_master_frontend_url
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ keycloak_http_port }}/admin/realms/master"
+        method: PUT
+        headers: "{{ kc_headers }}"
+        body_format: json
+        body:
+          attributes:
+            frontendUrl: "{{ keycloak_master_frontend_url }}"
+        status_code: 204
+      changed_when: true
+
+    - name: Configurar proxy reverso e TLS
+      ansible.builtin.import_tasks: tasks/nginx.yml
+
+    - name: Verificar publicação do realm master pelo proxy
+      ansible.builtin.uri:
+        url: "https://127.0.0.1/realms/master/.well-known/openid-configuration"
+        headers:
+          Host: "{{ keycloak_public_hostname }}"
+        validate_certs: false
+        status_code: "{{ 200 if keycloak_admin_console_publicada and not keycloak_admin_public_hostname else 403 }}"
+      changed_when: false
+
+    - name: Verificar redirecionamento da raiz para o portal
+      ansible.builtin.uri:
+        url: "https://127.0.0.1/"
+        headers:
+          Host: "{{ keycloak_public_hostname }}"
+        validate_certs: false
+        follow_redirects: none
+        status_code: 302
+      register: keycloak_raiz
+      failed_when: >-
+        keycloak_raiz.status != 302 or
+        keycloak_raiz.location | default('') is not search('/realms/' ~ keycloak_realm ~ '/account/$')
+      changed_when: false
+
+    - name: Verificar console de administração pelo proxy
+      when: keycloak_admin_console_publicada
+      ansible.builtin.uri:
+        url: "https://127.0.0.1/admin/master/console/"
+        headers:
+          Host: "{{ keycloak_admin_public_hostname or keycloak_public_hostname }}"
+        validate_certs: false
+        status_code: 200
+      changed_when: false
+
+  handlers:
+    - name: Reiniciar Keycloak
+      ansible.builtin.systemd_service:
+        name: keycloak
+        state: restarted
+        daemon_reload: true
+
+    - name: Recarregar nginx
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded

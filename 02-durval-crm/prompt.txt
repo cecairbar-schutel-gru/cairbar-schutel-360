@@ -1,0 +1,2 @@
+Considere as decisões arquiteturais descritas em @durvalcrm-frontend-plan.md e @durvalcrm-stack-tecnologica.md e implemente as histórias de usuários definidas em devplan/12-administration/user-stories.md
+Lembre que as telas de frontend a serem desenvolvidas devem seguir o wireframe @Designer.png 

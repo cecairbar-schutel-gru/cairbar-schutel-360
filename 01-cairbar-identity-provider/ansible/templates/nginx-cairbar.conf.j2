@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+# Base compartilhada do nginx da VM (contexto http), instalada pela solução 01. Os sites
+# (Keycloak aqui; DurvalCRM em 02-durval-crm; SGB em 03-cairbar-booksys) ficam cada um no
+# seu arquivo de sites-available e usam o log e os snippets cairbar-*.conf definidos aqui.
+
+# Correlation ID (RNF-006): reaproveita X-Request-ID do cliente se for bem formado,
+# senão gera um novo. É repassado ao upstream e devolvido na resposta.
+map $http_x_request_id $correlation_id {
+    "~^[A-Za-z0-9._-]{1,64}$" $http_x_request_id;
+    default                   $request_id;
+}
+
+# Log JSON sem query string (code/state do OIDC) e sem cabeçalhos de autorização.
+log_format cairbar_json escape=json
+    '{"time":"$time_iso8601","correlation_id":"$correlation_id","host":"$host",'
+    '"remote_addr":"$remote_addr","method":"$request_method","path":"$uri",'
+    '"status":$status,"bytes_sent":$body_bytes_sent,"request_time":$request_time,'
+    '"upstream_time":"$upstream_response_time","user_agent":"$http_user_agent"}';

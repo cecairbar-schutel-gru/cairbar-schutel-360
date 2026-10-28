@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: durvalcrm
+  datasource:
+    url: ${DURVALCRM_DB_URL:jdbc:postgresql://localhost:5432/durvalcrm}
+    username: ${DURVALCRM_DB_USER:durvalcrm}
+    password: ${DURVALCRM_DB_PASSWORD:}
+  web:
+    resources:
+      # O SPA é servido só pela FrontendConfiguration. Sem os locais padrão, "/" não vira a
+      # welcome page do Spring Boot (encaminhamento que saía com charset ISO-8859-1).
+      static-locations: classpath:/sem-locais-padrao/
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+    placeholders:
+      # Valor da mensalidade usado até a instalação da Administração (primeira linha do histórico, US-ADMIN-002).
+      mensalidade_inicial: ${DURVALCRM_MENSALIDADE:50.00}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${DURVALCRM_KEYCLOAK_ISSUER:https://comunidade-cairbar.20-55-96-192.nip.io/realms/cecairbar}
+          audiences: durvalcrm-api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+durvalcrm:
+  fuso-horario: America/Sao_Paulo
+  # Só para testes em DEV (AAAA-MM-DD): "hoje" da aplicação vira essa data na partida. Vazio usa o relógio real.
+  data-simulada: ${DURVALCRM_DATA_SIMULADA:}
+  keycloak:
+    client-id: durvalcrm-api
+    admin:
+      # Leitura dos usuários do realm (US-ADMIN-001): segredo do client durvalcrm-api, cuja conta de
+      # serviço tem view-users, view-clients e view-events de realm-management. Vazio desliga a lista de usuários.
+      client-secret: ${DURVALCRM_KEYCLOAK_CLIENT_SECRET:}
+      # Realm em que os administradores entram no console ("Gerenciar no Keycloak").
+      console-realm: ${DURVALCRM_KEYCLOAK_CONSOLE_REALM:master}
+  competencias:
+    agendamento:
+      # Geração mensal das competências (US-CONTRIB-001); desligada nos testes.
+      habilitado: ${DURVALCRM_AGENDAMENTO_COMPETENCIAS:true}
+  organizacao:
+    # Dados da instalação, usados até o Administrador gravar os da organização (US-ADMIN-005).
+    nome: ${DURVALCRM_ORGANIZACAO_NOME:Centro Espírita Cairbar Schutel}
+    cnpj: ${DURVALCRM_ORGANIZACAO_CNPJ:}
+    endereco: ${DURVALCRM_ORGANIZACAO_ENDERECO:}
+    rodape-recibo: ${DURVALCRM_ORGANIZACAO_RODAPE:Obrigado pela sua contribuição!}
+  cep:
+    url: https://viacep.com.br/ws

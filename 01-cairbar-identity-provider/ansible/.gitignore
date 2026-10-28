@@ -1,0 +1,5 @@
+.vault_pass
+global_vars/secrets.yml
+global_vars/secrets-*.yml
+artifacts/
+collections/

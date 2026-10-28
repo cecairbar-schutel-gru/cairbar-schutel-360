@@ -1,0 +1,11 @@
+---
+# Stack completa do Booksys. O PostgreSQL, o Keycloak e o nginx são instalados pela solução
+# 01-cairbar-identity-provider, que precisa rodar antes; aqui só são criados o banco e o site do SGB no nginx.
+- name: Banco do Booksys
+  ansible.builtin.import_playbook: postgresql.yml
+
+- name: Apache Tomcat
+  ansible.builtin.import_playbook: tomcat.yml
+
+- name: Site do SGB no nginx
+  ansible.builtin.import_playbook: nginx.yml

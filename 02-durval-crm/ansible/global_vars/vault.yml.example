@@ -1,0 +1,7 @@
+---
+# Copie para global_vars/vault.yml, defina as senhas e criptografe:
+#   ansible-vault encrypt global_vars/vault.yml --vault-password-file .vault_pass
+# Evite aspas duplas e barras invertidas nas senhas.
+vault_postgresql_durvalcrm_password: "trocar-senha-durvalcrm"
+# Senha de cecairbar_admin_user (realm master), usada por keycloak-cecairbar.yml
+vault_keycloak_admin_password: "trocar-senha-admin-keycloak"

@@ -1,0 +1,7 @@
+---
+collections:
+  - name: community.postgresql
+    version: ">=4.0.0"
+  # Módulos keycloak_* usados por playbooks/keycloak-cecairbar.yml
+  - name: community.general
+    version: ">=10.0.0"

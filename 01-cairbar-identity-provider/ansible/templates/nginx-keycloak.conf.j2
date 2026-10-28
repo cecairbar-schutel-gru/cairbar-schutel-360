@@ -1,0 +1,187 @@
+# {{ ansible_managed }}
+# Proxy reverso do Keycloak (realm {{ keycloak_realm }}). Publica /realms/, /resources/ e
+# /api/v1/cards/ (Serviço de Carteirinha, se houver host no grupo carteirinha); a console de
+# administração (/admin/ e realm master) só se keycloak_admin_console_publicada,
+# restrita a keycloak_admin_console_allow, no hostname próprio keycloak_admin_public_hostname
+# (se definido) ou no domínio público. Métricas e health ficam internos.
+# A raiz leva ao portal (cliente account). Os sites dos apps (DurvalCRM, SGB) são
+# acrescentados pelas soluções 02 e 03 (mapa em ../../esquema-navegacao.png).
+# Log, correlation ID e snippets cairbar-*.conf vêm de conf.d/cairbar.conf.
+{% macro admin_allow() %}
+        allow 127.0.0.1;
+        allow ::1;
+{% for origem in keycloak_admin_console_allow %}
+        allow {{ origem }};
+{% endfor %}
+        deny all;
+{% endmacro %}
+{% set admin_no_publico = keycloak_admin_console_publicada and not keycloak_admin_public_hostname %}
+{% macro admin_locations() %}
+    # Console de administração e realm master, restritos às origens liberadas.
+    location = /realms/master {
+{{ admin_allow() }}        proxy_pass http://keycloak;
+    }
+
+    location ^~ /realms/master/ {
+{{ admin_allow() }}        proxy_pass http://keycloak;
+    }
+
+    location = /admin {
+{{ admin_allow() }}        proxy_pass http://keycloak;
+    }
+
+    location ^~ /admin/ {
+{{ admin_allow() }}        proxy_pass http://keycloak;
+    }
+{% endmacro %}
+
+upstream keycloak {
+    server 127.0.0.1:{{ keycloak_http_port }};
+    keepalive 16;
+}
+{% if groups['carteirinha'] | default([]) | length > 0 %}
+
+upstream carteirinha {
+    server {{ carteirinha_http_host }}:{{ carteirinha_http_port }};
+    keepalive 8;
+}
+{% endif %}
+{% if keycloak_public_hostname is not match('^[0-9.:]+$') %}
+
+# Acesso pelo IP da VM (ou por um Host sem site) é redirecionado para o domínio público,
+# para que o issuer e os redirects do OIDC usem sempre o mesmo hostname.
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    access_log /var/log/nginx/keycloak-access.log cairbar_json;
+    return 301 https://{{ keycloak_public_hostname }}$request_uri;
+}
+
+server {
+    listen 443 ssl http2 default_server;
+    listen [::]:443 ssl http2 default_server;
+    server_name _;
+    ssl_certificate     {{ nginx_tls_cert }};
+    ssl_certificate_key {{ nginx_tls_key }};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    server_tokens off;
+    access_log /var/log/nginx/keycloak-access.log cairbar_json;
+    return 301 https://{{ keycloak_public_hostname }}$request_uri;
+}
+{% endif %}
+
+# HTTP: desafio ACME e redirect para HTTPS.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ keycloak_public_hostname }};
+    access_log /var/log/nginx/keycloak-access.log cairbar_json;
+
+    include snippets/cairbar-acme.conf;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    # Sintaxe compatível com o nginx do Ubuntu 22.04/24.04 (< 1.25).
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name {{ keycloak_public_hostname }};
+
+    ssl_certificate     {{ nginx_tls_cert }};
+    ssl_certificate_key {{ nginx_tls_key }};
+    include snippets/cairbar-tls.conf;
+{% if nginx_tls_cert.startswith("/etc/letsencrypt/") %}
+    add_header Strict-Transport-Security "max-age=31536000" always;
+{% endif %}
+
+    access_log /var/log/nginx/keycloak-access.log cairbar_json;
+    include snippets/cairbar-proxy.conf;
+{% if admin_no_publico %}
+
+{{ admin_locations() }}{% else %}
+
+    # O realm master (administração) só é acessível pelo hostname da console ou pelo túnel SSH.
+    location = /realms/master {
+        return 403;
+    }
+
+    location ^~ /realms/master/ {
+        return 403;
+    }
+{% endif %}
+
+    # Raiz do domínio: portal da Comunidade Cairbar (cliente account do realm).
+    location = / {
+        return 302 /realms/{{ keycloak_realm }}/account/;
+    }
+
+    location /realms/ {
+        proxy_pass http://keycloak;
+    }
+
+    location /resources/ {
+        proxy_pass http://keycloak;
+    }
+{% if groups['carteirinha'] | default([]) | length > 0 %}
+
+    # Serviço de Carteirinha (playbooks/carteirinha.yml), no mesmo host do portal: sem CORS.
+    # Só a API pública; /health fica no loopback.
+    location ^~ /api/v1/cards/ {
+        client_max_body_size 16k;
+        proxy_pass http://carteirinha;
+    }
+{% endif %}
+
+    location / {
+        return 404;
+    }
+}
+{% if keycloak_admin_console_publicada and keycloak_admin_public_hostname %}
+
+# Console de administração em hostname próprio: só /admin/, realm master e /resources/.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ keycloak_admin_public_hostname }};
+    access_log /var/log/nginx/keycloak-access.log cairbar_json;
+
+    include snippets/cairbar-acme.conf;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name {{ keycloak_admin_public_hostname }};
+
+    ssl_certificate     {{ nginx_admin_tls_cert }};
+    ssl_certificate_key {{ nginx_admin_tls_key }};
+    include snippets/cairbar-tls.conf;
+{% if nginx_admin_tls_cert.startswith("/etc/letsencrypt/") %}
+    add_header Strict-Transport-Security "max-age=31536000" always;
+{% endif %}
+
+    access_log /var/log/nginx/keycloak-access.log cairbar_json;
+    include snippets/cairbar-proxy.conf;
+
+{{ admin_locations() }}
+    location = / {
+        return 302 /admin/master/console/;
+    }
+
+    location /resources/ {
+        proxy_pass http://keycloak;
+    }
+
+    location / {
+        return 404;
+    }
+}
+{% endif %}

@@ -1,0 +1,86 @@
+---
+# Implanta o DurvalCRM (ROOT.war: API + SPA embutido) no Tomcat instalado por tomcat.yml.
+# Gere o WAR antes com "mvn clean verify" em ../backend e rode com --ee false
+# (../backend não é visível no execution environment).
+- name: Implantar o DurvalCRM no Tomcat
+  hosts: tomcat
+  become: true
+  vars_files:
+    - ../global_vars/main.yml
+
+  pre_tasks:
+    - name: Verificar WAR local
+      ansible.builtin.stat:
+        path: "{{ durvalcrm_war }}"
+      delegate_to: localhost
+      become: false
+      register: durvalcrm_war_local
+
+    - name: Exigir WAR gerado
+      ansible.builtin.assert:
+        that: durvalcrm_war_local.stat.exists
+        fail_msg: "WAR não encontrado em {{ durvalcrm_war }}: rode 'mvn verify' em ../backend"
+        quiet: true
+
+    - name: Exigir Tomcat instalado
+      ansible.builtin.stat:
+        path: "{{ tomcat_base }}/bin/setenv.sh"
+      register: durvalcrm_setenv
+      failed_when: not durvalcrm_setenv.stat.exists
+
+  tasks:
+    # Com o Tomcat parado, a aplicação expandida antiga é removida e o WAR novo
+    # é expandido na partida (evita redeploy a quente pelo autoDeploy).
+    - name: Copiar WAR para o servidor
+      ansible.builtin.copy:
+        src: "{{ durvalcrm_war }}"
+        dest: "/tmp/durvalcrm-ROOT.war"
+        owner: root
+        group: root
+        mode: "0644"
+      register: durvalcrm_war_copiado
+
+    - name: Comparar com o WAR implantado
+      ansible.builtin.stat:
+        path: "{{ tomcat_base }}/webapps/ROOT.war"
+      register: durvalcrm_war_atual
+
+    # checksum (sha1) do copy e do stat.
+    - name: Substituir a aplicação
+      when: >-
+        not durvalcrm_war_atual.stat.exists
+        or durvalcrm_war_atual.stat.checksum != durvalcrm_war_copiado.checksum
+      block:
+        - name: Parar Tomcat
+          ansible.builtin.systemd_service:
+            name: tomcat
+            state: stopped
+
+        - name: Remover aplicação expandida
+          ansible.builtin.file:
+            path: "{{ tomcat_base }}/webapps/ROOT"
+            state: absent
+
+        - name: Instalar ROOT.war
+          ansible.builtin.copy:
+            src: /tmp/durvalcrm-ROOT.war
+            dest: "{{ tomcat_base }}/webapps/ROOT.war"
+            remote_src: true
+            owner: "{{ tomcat_user }}"
+            group: "{{ tomcat_user }}"
+            mode: "0640"
+
+        - name: Iniciar Tomcat
+          ansible.builtin.systemd_service:
+            name: tomcat
+            state: started
+
+    # O Flyway migra o banco na primeira partida: pode levar alguns minutos.
+    - name: Aguardar a aplicação ficar saudável
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ tomcat_http_port }}/actuator/health"
+        status_code: 200
+      register: durvalcrm_health
+      until: durvalcrm_health.status == 200
+      retries: 40
+      delay: 6

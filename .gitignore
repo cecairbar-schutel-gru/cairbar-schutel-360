@@ -1,0 +1,93 @@
+# ==========================================================
+# Arquivos locais de planejamento e assistentes de IA
+# ==========================================================
+enhancements/
+devplan/
+.bob/
+.claude/
+CLAUDE.md
+AGENTS.md
+
+# ==========================================================
+# Segredos e credenciais — NUNCA versionar
+# ==========================================================
+.vault_pass
+.vault_pass*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+ssh_keys/
+.env
+.env.local
+.env.*.local
+!.env.example
+*.json.key
+google-wallet-sa*.json
+# Chave de service account GCP (cairbar-identity-provider)
+comunidade-cairbar-*.json
+# Variáveis Ansible não criptografadas (vault.yml criptografado pode ser versionado)
+global_vars/secrets.yml
+global_vars/secrets-*.yml
+!global_vars/secrets.yml.example
+
+# ==========================================================
+# Ansible
+# ==========================================================
+artifacts/
+collections/
+*.retry
+
+# ==========================================================
+# Java / Maven / Quarkus
+# ==========================================================
+target/
+*.class
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+.quarkus/
+
+# ==========================================================
+# Node / Front-end
+# ==========================================================
+node_modules/
+dist/
+dist-ssr/
+dist_keycloak/
+build/
+storybook-static/
+coverage/
+.nyc_output/
+.npm/
+.eslintcache
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+test-results/
+playwright-report/
+
+# ==========================================================
+# Logs e temporários
+# ==========================================================
+logs/
+*.log
+*.tmp
+*.swp
+*.sw?
+*~
+
+# ==========================================================
+# IDEs e sistema operacional
+# ==========================================================
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
