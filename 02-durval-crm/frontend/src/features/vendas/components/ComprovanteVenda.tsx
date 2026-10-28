@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -61,48 +62,50 @@ export function ComprovanteVenda({ venda }: { venda: DetalheVenda }) {
         <TextoSuave>
           {formatarDataHora(venda.confirmadaEm)}
         </TextoSuave>
-        <Table size="small" aria-label="Itens do comprovante" sx={{ mt: 1 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ pl: 0 }}>Item</TableCell>
-              <TableCell align="right">Qtd</TableCell>
-              <TableCell align="right">Unitário</TableCell>
-              <TableCell align="right" sx={{ pr: 0 }}>
-                Subtotal
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {venda.itens.map((i) => (
-              <TableRow key={i.produtoId}>
-                <TableCell sx={{ pl: 0 }}>{i.produtoNome}</TableCell>
-                <TableCell align="right">{i.quantidade}</TableCell>
-                <TableCell align="right">{formatarMoeda(i.precoUnitario)}</TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Itens do comprovante" sx={{ mt: 1 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ pl: 0 }}>Item</TableCell>
+                <TableCell align="right">Qtd</TableCell>
+                <TableCell align="right">Unitário</TableCell>
                 <TableCell align="right" sx={{ pr: 0 }}>
-                  {formatarMoeda(i.subtotal)}
+                  Subtotal
                 </TableCell>
               </TableRow>
-            ))}
-            <TableRow>
-              <TableCell colSpan={3} sx={{ pl: 0 }}>
-                <strong>Total</strong>
-              </TableCell>
-              <TableCell align="right" sx={{ pr: 0 }}>
-                <strong>{formatarMoeda(venda.total)}</strong>
-              </TableCell>
-            </TableRow>
-            {venda.pagamentos.map((p, i) => (
-              <TableRow key={i}>
+            </TableHead>
+            <TableBody>
+              {venda.itens.map((i) => (
+                <TableRow key={i.produtoId}>
+                  <TableCell sx={{ pl: 0 }}>{i.produtoNome}</TableCell>
+                  <TableCell align="right">{i.quantidade}</TableCell>
+                  <TableCell align="right">{formatarMoeda(i.precoUnitario)}</TableCell>
+                  <TableCell align="right" sx={{ pr: 0 }}>
+                    {formatarMoeda(i.subtotal)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow>
                 <TableCell colSpan={3} sx={{ pl: 0 }}>
-                  {rotuloPagamento(p)}
+                  <strong>Total</strong>
                 </TableCell>
                 <TableCell align="right" sx={{ pr: 0 }}>
-                  {formatarMoeda(p.valor)}
+                  <strong>{formatarMoeda(venda.total)}</strong>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+              {venda.pagamentos.map((p, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={3} sx={{ pl: 0 }}>
+                    {rotuloPagamento(p)}
+                  </TableCell>
+                  <TableCell align="right" sx={{ pr: 0 }}>
+                    {formatarMoeda(p.valor)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
         <TextoSuave>Vendedor: {venda.vendedorNome ?? '—'}</TextoSuave>
       </CardContent>
     </Card>

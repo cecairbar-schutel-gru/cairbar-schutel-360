@@ -3,6 +3,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -55,36 +56,38 @@ export function CompetenciasTab({
       {dados.itens.length === 0 ? (
         <TextoSuave>Este doador ainda não possui competências.</TextoSuave>
       ) : (
-        <Table aria-label="Competências do doador">
-          <TableHead>
-            <TableRow>
-              <TableCell>Competência</TableCell>
-              <TableCell>Valor</TableCell>
-              <TableCell>Situação</TableCell>
-              <TableCell>Pagamento</TableCell>
-              <TableCell>Recibo</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {dados.itens.map((c) => (
-              <TableRow key={c.competencia}>
-                <TableCell>{formatarCompetencia(c.competencia)}</TableCell>
-                <TableCell>{formatarMoeda(c.valor)}</TableCell>
-                <TableCell>
-                  <SituacaoCompetenciaTag situacao={c.situacao} atrasada={c.atrasada} />
-                </TableCell>
-                <TableCell>{formatarData(c.dataPagamento)}</TableCell>
-                <TableCell>
-                  {c.numeroRecibo && c.contribuicaoId ? (
-                    <LinkRota to={`/contribuicoes/${c.contribuicaoId}`}>{c.numeroRecibo}</LinkRota>
-                  ) : (
-                    (c.numeroRecibo ?? '—')
-                  )}
-                </TableCell>
+        <TableContainer>
+          <Table aria-label="Competências do doador">
+            <TableHead>
+              <TableRow>
+                <TableCell>Competência</TableCell>
+                <TableCell>Valor</TableCell>
+                <TableCell>Situação</TableCell>
+                <TableCell>Pagamento</TableCell>
+                <TableCell>Recibo</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {dados.itens.map((c) => (
+                <TableRow key={c.competencia}>
+                  <TableCell>{formatarCompetencia(c.competencia)}</TableCell>
+                  <TableCell>{formatarMoeda(c.valor)}</TableCell>
+                  <TableCell>
+                    <SituacaoCompetenciaTag situacao={c.situacao} atrasada={c.atrasada} />
+                  </TableCell>
+                  <TableCell>{formatarData(c.dataPagamento)}</TableCell>
+                  <TableCell>
+                    {c.numeroRecibo && c.contribuicaoId ? (
+                      <LinkRota to={`/contribuicoes/${c.contribuicaoId}`}>{c.numeroRecibo}</LinkRota>
+                    ) : (
+                      (c.numeroRecibo ?? '—')
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {dados.possuiMaisAntigas && !completo && (
         <div>

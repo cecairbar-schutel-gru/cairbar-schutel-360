@@ -5,6 +5,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -83,42 +84,44 @@ function HistoricoMovimentos({ produtoId, versao }: { produtoId: number; versao:
       )}
       {!movimentos.carregando && !movimentos.erro && lista.length === 0 && <TextoSuave>Nenhum movimento no período.</TextoSuave>}
       {lista.length > 0 && (
-        <Table size="small" aria-label="Movimentos">
-          <TableHead>
-            <TableRow>
-              <TableCell>Data/hora</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell align="right">Quantidade</TableCell>
-              <TableCell>Remessa</TableCell>
-              <TableCell>Usuário</TableCell>
-              <TableCell>Referência</TableCell>
-              <TableCell align="right">Saldo após</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {lista.map((m) => (
-              <TableRow key={m.id}>
-                <TableCell>{formatarDataHora(m.ocorridoEm)}</TableCell>
-                <TableCell>
-                  {ROTULO_MOVIMENTO[m.tipo]}
-                  {m.estornado && (
-                    <Typography component="span" variant="body2" color="text.secondary">
-                      {' '}
-                      (estornado)
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell align="right">{quantidadeComSinal(m.quantidade)}</TableCell>
-                <TableCell>{m.remessaCodigo ?? '—'}</TableCell>
-                <TableCell>{m.usuarioNome ?? '—'}</TableCell>
-                <TableCell>
-                  <Referencia m={m} />
-                </TableCell>
-                <TableCell align="right">{m.saldoApos}</TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Movimentos">
+            <TableHead>
+              <TableRow>
+                <TableCell>Data/hora</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell align="right">Quantidade</TableCell>
+                <TableCell>Remessa</TableCell>
+                <TableCell>Usuário</TableCell>
+                <TableCell>Referência</TableCell>
+                <TableCell align="right">Saldo após</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {lista.map((m) => (
+                <TableRow key={m.id}>
+                  <TableCell>{formatarDataHora(m.ocorridoEm)}</TableCell>
+                  <TableCell>
+                    {ROTULO_MOVIMENTO[m.tipo]}
+                    {m.estornado && (
+                      <Typography component="span" variant="body2" color="text.secondary">
+                        {' '}
+                        (estornado)
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell align="right">{quantidadeComSinal(m.quantidade)}</TableCell>
+                  <TableCell>{m.remessaCodigo ?? '—'}</TableCell>
+                  <TableCell>{m.usuarioNome ?? '—'}</TableCell>
+                  <TableCell>
+                    <Referencia m={m} />
+                  </TableCell>
+                  <TableCell align="right">{m.saldoApos}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </Pilha>
   )
@@ -211,28 +214,30 @@ export function ProdutoPage() {
       {p.lotes.length === 0 ? (
         <TextoSuave>Sem estoque. As unidades entram por compra, doação ou remessa.</TextoSuave>
       ) : (
-        <Table size="small" aria-label="Saldo por origem">
-          <TableHead>
-            <TableRow>
-              <TableCell>Origem</TableCell>
-              <TableCell>Recebida em</TableCell>
-              <TableCell align="right">Repasse</TableCell>
-              <TableCell align="right">Saldo</TableCell>
-              <TableCell align="right">Aguardando baixa</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {p.lotes.map((l) => (
-              <TableRow key={l.remessaId ?? 'proprio'}>
-                <TableCell>{rotuloLote(l)}</TableCell>
-                <TableCell>{formatarData(l.recebidaEm)}</TableCell>
-                <TableCell align="right">{l.repassePercentual === null ? '—' : `${l.repassePercentual}%`}</TableCell>
-                <TableCell align="right">{l.quantidade}</TableCell>
-                <TableCell align="right">{l.aguardandoBaixa}</TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Saldo por origem">
+            <TableHead>
+              <TableRow>
+                <TableCell>Origem</TableCell>
+                <TableCell>Recebida em</TableCell>
+                <TableCell align="right">Repasse</TableCell>
+                <TableCell align="right">Saldo</TableCell>
+                <TableCell align="right">Aguardando baixa</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {p.lotes.map((l) => (
+                <TableRow key={l.remessaId ?? 'proprio'}>
+                  <TableCell>{rotuloLote(l)}</TableCell>
+                  <TableCell>{formatarData(l.recebidaEm)}</TableCell>
+                  <TableCell align="right">{l.repassePercentual === null ? '—' : `${l.repassePercentual}%`}</TableCell>
+                  <TableCell align="right">{l.quantidade}</TableCell>
+                  <TableCell align="right">{l.aguardandoBaixa}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       <Typography variant="h5" component="h2">
@@ -241,30 +246,32 @@ export function ProdutoPage() {
       {p.historicoPrecos.length === 0 ? (
         <TextoSuave>O preço não mudou desde o cadastro.</TextoSuave>
       ) : (
-        <Table size="small" aria-label="Histórico de preços">
-          <TableHead>
-            <TableRow>
-              <TableCell>Data/hora</TableCell>
-              <TableCell align="right">De</TableCell>
-              <TableCell align="right">Para</TableCell>
-              <TableCell>Solicitado por</TableCell>
-              <TableCell>Aprovado por</TableCell>
-              <TableCell>Motivo</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {p.historicoPrecos.map((h) => (
-              <TableRow key={h.alteradoEm + h.precoNovo}>
-                <TableCell>{formatarDataHora(h.alteradoEm)}</TableCell>
-                <TableCell align="right">{formatarMoeda(h.precoAnterior)}</TableCell>
-                <TableCell align="right">{formatarMoeda(h.precoNovo)}</TableCell>
-                <TableCell>{h.solicitadoPor ?? '—'}</TableCell>
-                <TableCell>{h.aprovadoPor}</TableCell>
-                <TableCell>{h.motivo}</TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Histórico de preços">
+            <TableHead>
+              <TableRow>
+                <TableCell>Data/hora</TableCell>
+                <TableCell align="right">De</TableCell>
+                <TableCell align="right">Para</TableCell>
+                <TableCell>Solicitado por</TableCell>
+                <TableCell>Aprovado por</TableCell>
+                <TableCell>Motivo</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {p.historicoPrecos.map((h) => (
+                <TableRow key={h.alteradoEm + h.precoNovo}>
+                  <TableCell>{formatarDataHora(h.alteradoEm)}</TableCell>
+                  <TableCell align="right">{formatarMoeda(h.precoAnterior)}</TableCell>
+                  <TableCell align="right">{formatarMoeda(h.precoNovo)}</TableCell>
+                  <TableCell>{h.solicitadoPor ?? '—'}</TableCell>
+                  <TableCell>{h.aprovadoPor}</TableCell>
+                  <TableCell>{h.motivo}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       <HistoricoMovimentos produtoId={id} versao={versao} />

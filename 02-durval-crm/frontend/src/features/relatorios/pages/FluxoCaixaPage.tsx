@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, MenuItem, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import { Box, Card, CardContent, MenuItem, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, Typography } from '@mui/material'
 import type { TipoConta } from '../../financeiro/types'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
@@ -118,47 +118,49 @@ export function FluxoCaixaPage() {
                 Movimento {ROTULO_AGRUPAMENTO[dados.agrupamento].toLowerCase()}
               </Typography>
               <Box sx={{ overflowX: 'auto' }}>
-                <Table size="small" aria-label="Movimento por período">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Período</TableCell>
-                      <TableCell align="right">Saldo inicial</TableCell>
-                      <TableCell align="right">Entradas</TableCell>
-                      <TableCell align="right">Saídas</TableCell>
-                      <TableCell align="right">Transf. recebidas</TableCell>
-                      <TableCell align="right">Transf. enviadas</TableCell>
-                      <TableCell align="right">Saldo final</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {dados.periodos.map((l) => (
-                      <TableRow key={l.inicio}>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                          <LinkRota to={linkLancamentos({ de: l.inicio, ate: l.fim, contaId: dados.contaId })}>
-                            {l.inicio === l.fim ? formatarData(l.inicio) : `${formatarData(l.inicio)} a ${formatarData(l.fim)}`}
-                          </LinkRota>
-                        </TableCell>
-                        <TableCell align="right"><Dinheiro valor={l.saldoInicial} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={l.entradas} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={l.saidas} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={l.transferenciasEntrada} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={l.transferenciasSaida} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={l.saldoFinal} negrito /></TableCell>
+                <TableContainer>
+                  <Table size="small" aria-label="Movimento por período">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Período</TableCell>
+                        <TableCell align="right">Saldo inicial</TableCell>
+                        <TableCell align="right">Entradas</TableCell>
+                        <TableCell align="right">Saídas</TableCell>
+                        <TableCell align="right">Transf. recebidas</TableCell>
+                        <TableCell align="right">Transf. enviadas</TableCell>
+                        <TableCell align="right">Saldo final</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600 }}>Período todo</TableCell>
-                      <TableCell align="right"><Dinheiro valor={dados.saldoInicial} negrito /></TableCell>
-                      <TableCell align="right"><Dinheiro valor={dados.totalEntradas} negrito /></TableCell>
-                      <TableCell align="right"><Dinheiro valor={dados.totalSaidas} negrito /></TableCell>
-                      <TableCell align="right"><Dinheiro valor={dados.transferenciasEntrada} negrito /></TableCell>
-                      <TableCell align="right"><Dinheiro valor={dados.transferenciasSaida} negrito /></TableCell>
-                      <TableCell align="right"><Dinheiro valor={dados.saldoFinal} negrito /></TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
+                    </TableHead>
+                    <TableBody>
+                      {dados.periodos.map((l) => (
+                        <TableRow key={l.inicio}>
+                          <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                            <LinkRota to={linkLancamentos({ de: l.inicio, ate: l.fim, contaId: dados.contaId })}>
+                              {l.inicio === l.fim ? formatarData(l.inicio) : `${formatarData(l.inicio)} a ${formatarData(l.fim)}`}
+                            </LinkRota>
+                          </TableCell>
+                          <TableCell align="right"><Dinheiro valor={l.saldoInicial} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={l.entradas} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={l.saidas} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={l.transferenciasEntrada} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={l.transferenciasSaida} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={l.saldoFinal} negrito /></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 600 }}>Período todo</TableCell>
+                        <TableCell align="right"><Dinheiro valor={dados.saldoInicial} negrito /></TableCell>
+                        <TableCell align="right"><Dinheiro valor={dados.totalEntradas} negrito /></TableCell>
+                        <TableCell align="right"><Dinheiro valor={dados.totalSaidas} negrito /></TableCell>
+                        <TableCell align="right"><Dinheiro valor={dados.transferenciasEntrada} negrito /></TableCell>
+                        <TableCell align="right"><Dinheiro valor={dados.transferenciasSaida} negrito /></TableCell>
+                        <TableCell align="right"><Dinheiro valor={dados.saldoFinal} negrito /></TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  </Table>
+                </TableContainer>
               </Box>
             </CardContent>
           </Card>

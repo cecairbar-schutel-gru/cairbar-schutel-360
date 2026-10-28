@@ -1,4 +1,4 @@
-import { Alert, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
+import { Alert, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
@@ -32,30 +32,32 @@ export function DevolucaoPage() {
       <Typography>
         Remessa {d.remessaCodigo} · devolvida em {formatarData(d.devolvidaEm)}
       </Typography>
-      <Table size="small" aria-label="Títulos devolvidos">
-        <TableHead>
-          <TableRow>
-            <TableCell>Título</TableCell>
-            <TableCell>ISBN</TableCell>
-            <TableCell align="right">Quantidade</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {d.itens.map((i) => (
-            <TableRow key={i.produtoId}>
-              <TableCell>{i.titulo}</TableCell>
-              <TableCell>{i.isbn ?? '—'}</TableCell>
-              <TableCell align="right">{i.quantidade}</TableCell>
+      <TableContainer>
+        <Table size="small" aria-label="Títulos devolvidos">
+          <TableHead>
+            <TableRow>
+              <TableCell>Título</TableCell>
+              <TableCell>ISBN</TableCell>
+              <TableCell align="right">Quantidade</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={2}>Total</TableCell>
-            <TableCell align="right">{d.itens.reduce((s, i) => s + i.quantidade, 0)}</TableCell>
-          </TableRow>
-        </TableFooter>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {d.itens.map((i) => (
+              <TableRow key={i.produtoId}>
+                <TableCell>{i.titulo}</TableCell>
+                <TableCell>{i.isbn ?? '—'}</TableCell>
+                <TableCell align="right">{i.quantidade}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={2}>Total</TableCell>
+              <TableCell align="right">{d.itens.reduce((s, i) => s + i.quantidade, 0)}</TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </TableContainer>
       {d.observacao && <TextoSuave>Observação: {d.observacao}</TextoSuave>}
       <TextoSuave>Registrada por {d.registradaPor}. Devolução sem efeito financeiro.</TextoSuave>
       <Assinaturas esquerda={d.organizacao.nome} direita={d.editoraNome} />

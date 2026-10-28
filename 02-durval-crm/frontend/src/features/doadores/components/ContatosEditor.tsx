@@ -37,9 +37,16 @@ function LinhaContato({
     <Box
       sx={{
         display: 'grid',
+        // No celular o tipo ocupa a linha inteira e o número vem abaixo.
         gridTemplateColumns: comTipo
-          ? 'minmax(8rem, 10rem) 1fr auto auto'
-          : '1fr auto auto',
+          ? {
+              xs: 'minmax(0, 1fr) auto auto',
+              sm: 'minmax(8rem, 10rem) minmax(0, 1fr) auto auto',
+            }
+          : 'minmax(0, 1fr) auto auto',
+        '& > :first-of-type': comTipo
+          ? { gridColumn: { xs: '1 / -1', sm: 'auto' } }
+          : undefined,
         gap: 2,
         alignItems: 'center',
       }}

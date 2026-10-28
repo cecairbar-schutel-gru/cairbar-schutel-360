@@ -8,6 +8,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TablePagination,
   TableRow,
@@ -67,41 +68,43 @@ function ListaEditoras({ tesouraria }: { tesouraria: boolean }) {
       {!editoras.carregando && !editoras.erro && lista.length === 0 && <TextoSuave>Nenhuma editora encontrada.</TextoSuave>}
       {lista.length > 0 && (
         <>
-          <Table size="small" aria-label="Editoras">
-            <TableHead>
-              <TableRow>
-                <TableCell>Editora</TableCell>
-                <TableCell>CNPJ</TableCell>
-                <TableCell>Contato</TableCell>
-                <TableCell align="right">Remessas abertas</TableCell>
-                {tesouraria && <TableCell align="right">Saldo devido</TableCell>}
-                <TableCell>Status</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((e) => (
-                <TableRow key={e.id} hover>
-                  <TableCell>
-                    <LinkRota to={`/editoras/${e.id}`}>{e.nome}</LinkRota>
-                  </TableCell>
-                  <TableCell>{formatarCnpj(e.cnpj)}</TableCell>
-                  <TableCell>
-                    {e.contatoNome ?? '—'}
-                    {e.telefone && (
-                      <Typography variant="body2" color="text.secondary">
-                        {formatarTelefone(e.telefone)}
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell align="right">{e.remessasAbertas}</TableCell>
-                  {tesouraria && <TableCell align="right">{formatarMoeda(e.saldoDevido)}</TableCell>}
-                  <TableCell>
-                    <StatusEditoraTag ativa={e.ativa} />
-                  </TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Editoras">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Editora</TableCell>
+                  <TableCell>CNPJ</TableCell>
+                  <TableCell>Contato</TableCell>
+                  <TableCell align="right">Remessas abertas</TableCell>
+                  {tesouraria && <TableCell align="right">Saldo devido</TableCell>}
+                  <TableCell>Status</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((e) => (
+                  <TableRow key={e.id} hover>
+                    <TableCell>
+                      <LinkRota to={`/editoras/${e.id}`}>{e.nome}</LinkRota>
+                    </TableCell>
+                    <TableCell>{formatarCnpj(e.cnpj)}</TableCell>
+                    <TableCell>
+                      {e.contatoNome ?? '—'}
+                      {e.telefone && (
+                        <Typography variant="body2" color="text.secondary">
+                          {formatarTelefone(e.telefone)}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="right">{e.remessasAbertas}</TableCell>
+                    {tesouraria && <TableCell align="right">{formatarMoeda(e.saldoDevido)}</TableCell>}
+                    <TableCell>
+                      <StatusEditoraTag ativa={e.ativa} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TablePagination
             component="div"
             count={lista.length}
@@ -149,36 +152,38 @@ function ListaRemessas() {
       {!remessas.carregando && !remessas.erro && lista.length === 0 && <TextoSuave>Nenhuma remessa encontrada.</TextoSuave>}
       {lista.length > 0 && (
         <>
-          <Table size="small" aria-label="Remessas">
-            <TableHead>
-              <TableRow>
-                <TableCell>Código</TableCell>
-                <TableCell>Editora</TableCell>
-                <TableCell>Recebida em</TableCell>
-                <TableCell>Documento</TableCell>
-                <TableCell align="right">Recebidas</TableCell>
-                <TableCell align="right">Restantes</TableCell>
-                <TableCell>Situação</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((r) => (
-                <TableRow key={r.id} hover>
-                  <TableCell>
-                    <LinkRota to={`/editoras/remessas/${r.id}`}>{r.codigo}</LinkRota>
-                  </TableCell>
-                  <TableCell>{r.editoraNome}</TableCell>
-                  <TableCell>{formatarData(r.recebidaEm)}</TableCell>
-                  <TableCell>{r.numeroDocumento ?? '—'}</TableCell>
-                  <TableCell align="right">{r.recebidas}</TableCell>
-                  <TableCell align="right">{r.restantes}</TableCell>
-                  <TableCell>
-                    <SituacaoRemessaTag situacao={r.situacao} />
-                  </TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Remessas">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Código</TableCell>
+                  <TableCell>Editora</TableCell>
+                  <TableCell>Recebida em</TableCell>
+                  <TableCell>Documento</TableCell>
+                  <TableCell align="right">Recebidas</TableCell>
+                  <TableCell align="right">Restantes</TableCell>
+                  <TableCell>Situação</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((r) => (
+                  <TableRow key={r.id} hover>
+                    <TableCell>
+                      <LinkRota to={`/editoras/remessas/${r.id}`}>{r.codigo}</LinkRota>
+                    </TableCell>
+                    <TableCell>{r.editoraNome}</TableCell>
+                    <TableCell>{formatarData(r.recebidaEm)}</TableCell>
+                    <TableCell>{r.numeroDocumento ?? '—'}</TableCell>
+                    <TableCell align="right">{r.recebidas}</TableCell>
+                    <TableCell align="right">{r.restantes}</TableCell>
+                    <TableCell>
+                      <SituacaoRemessaTag situacao={r.situacao} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TablePagination
             component="div"
             count={lista.length}

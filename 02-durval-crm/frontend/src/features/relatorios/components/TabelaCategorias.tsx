@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Chip, Link, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
+import { Box, Card, CardContent, Chip, Link, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
 import { TextoSuave } from '../../../shared/components/layout'
 import { linkLancamentos } from '../regras'
@@ -26,27 +26,29 @@ export function TabelaCategorias({ titulo, grupos, total, periodo, vazio = 'Nada
           <TextoSuave>{vazio}</TextoSuave>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" aria-label={titulo}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Categoria</TableCell>
-                  <TableCell sx={{ width: '35%' }}>Participação</TableCell>
-                  <TableCell align="right">Valor</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {grupos.map((g) => (
-                  <Grupo key={g.codigo} grupo={g} periodo={periodo} />
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
-                  <TableCell />
-                  <TableCell align="right"><Dinheiro valor={total} negrito /></TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
+            <TableContainer>
+              <Table size="small" aria-label={titulo}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Categoria</TableCell>
+                    <TableCell sx={{ width: '35%' }}>Participação</TableCell>
+                    <TableCell align="right">Valor</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {grupos.map((g) => (
+                    <Grupo key={g.codigo} grupo={g} periodo={periodo} />
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
+                    <TableCell />
+                    <TableCell align="right"><Dinheiro valor={total} negrito /></TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            </TableContainer>
           </Box>
         )}
       </CardContent>

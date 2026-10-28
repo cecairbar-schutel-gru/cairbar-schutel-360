@@ -36,7 +36,7 @@ const Grade = styled('div')(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: '1fr',
   gap: theme.spacing(2),
-  [theme.breakpoints.up('md')]: { gridTemplateColumns: '1fr 1fr' },
+  [theme.breakpoints.up('md')]: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
 }))
 
 interface LinhaItem {

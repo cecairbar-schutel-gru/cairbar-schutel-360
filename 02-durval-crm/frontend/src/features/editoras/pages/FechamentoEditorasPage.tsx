@@ -1,4 +1,4 @@
-import { Button, Chip, MenuItem, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import { Button, Chip, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthProvider'
@@ -82,50 +82,52 @@ export function FechamentoEditorasPage() {
             </Aviso>
           )}
           {dados.editoras.length > 0 && (
-            <Table size="small" aria-label="Editoras com saldo no fim do mês">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Editora</TableCell>
-                  <TableCell align="right">Saldo no fim do mês</TableCell>
-                  <TableCell>Situação</TableCell>
-                  <TableCell align="right">Ações</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {dados.editoras.map((e) => (
-                  <TableRow key={e.editoraId}>
-                    <TableCell>
-                      <LinkRota to={`/editoras/${e.editoraId}/apuracao?mes=${mes}`}>{e.nome}</LinkRota>
-                    </TableCell>
-                    <TableCell align="right">{formatarMoeda(e.saldoNoFimDoMes)}</TableCell>
-                    <TableCell>
-                      {e.transferencia ? (
-                        <>
-                          <Chip size="small" variant="outlined" color="info" label="Transferido" />
-                          <Typography variant="body2" color="text.secondary">
-                            {e.transferencia.usuarioNome}, {formatarDataHora(e.transferencia.registradaEm)}: “{e.transferencia.nota}”
-                          </Typography>
-                        </>
-                      ) : (
-                        <Chip size="small" variant="outlined" color="warning" label="Pendente" />
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      {tesoureiro && !e.transferencia && (
-                        <LinhaAcoes sx={{ justifyContent: 'flex-end' }}>
-                          <Button size="small" onClick={() => navegar(`/editoras/pagamento?editoraId=${e.editoraId}`)}>
-                            Pagar
-                          </Button>
-                          <Button size="small" variant="outlined" onClick={() => setTransferindo(e)}>
-                            Transferir saldo
-                          </Button>
-                        </LinhaAcoes>
-                      )}
-                    </TableCell>
+            <TableContainer>
+              <Table size="small" aria-label="Editoras com saldo no fim do mês">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Editora</TableCell>
+                    <TableCell align="right">Saldo no fim do mês</TableCell>
+                    <TableCell>Situação</TableCell>
+                    <TableCell align="right">Ações</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {dados.editoras.map((e) => (
+                    <TableRow key={e.editoraId}>
+                      <TableCell>
+                        <LinkRota to={`/editoras/${e.editoraId}/apuracao?mes=${mes}`}>{e.nome}</LinkRota>
+                      </TableCell>
+                      <TableCell align="right">{formatarMoeda(e.saldoNoFimDoMes)}</TableCell>
+                      <TableCell>
+                        {e.transferencia ? (
+                          <>
+                            <Chip size="small" variant="outlined" color="info" label="Transferido" />
+                            <Typography variant="body2" color="text.secondary">
+                              {e.transferencia.usuarioNome}, {formatarDataHora(e.transferencia.registradaEm)}: “{e.transferencia.nota}”
+                            </Typography>
+                          </>
+                        ) : (
+                          <Chip size="small" variant="outlined" color="warning" label="Pendente" />
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {tesoureiro && !e.transferencia && (
+                          <LinhaAcoes sx={{ justifyContent: 'flex-end' }}>
+                            <Button size="small" onClick={() => navegar(`/editoras/pagamento?editoraId=${e.editoraId}`)}>
+                              Pagar
+                            </Button>
+                            <Button size="small" variant="outlined" onClick={() => setTransferindo(e)}>
+                              Transferir saldo
+                            </Button>
+                          </LinhaAcoes>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </>
       )}

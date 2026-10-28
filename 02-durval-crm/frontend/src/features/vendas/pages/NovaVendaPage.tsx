@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableRow,
   Tabs,
   Typography,
@@ -303,34 +304,36 @@ function FormularioVenda({ opcoes }: { opcoes: OpcoesVenda }) {
         onFechar={() => setRevisando(false)}
         onConfirmar={() => void confirmar()}
       >
-        <Table size="small" aria-label="Revisão da venda">
-          <TableBody>
-            {itens.map((i) => (
-              <TableRow key={i.produtoId}>
+        <TableContainer>
+          <Table size="small" aria-label="Revisão da venda">
+            <TableBody>
+              {itens.map((i) => (
+                <TableRow key={i.produtoId}>
+                  <TableCell>
+                    {i.quantidade} × {i.nome}
+                  </TableCell>
+                  <TableCell align="right">{formatarMoeda(i.preco * i.quantidade)}</TableCell>
+                </TableRow>
+              ))}
+              {resumo.pagamentos.map((p, n) => (
+                <TableRow key={n}>
+                  <TableCell>
+                    {rotuloPagamento(p)} — {contaDoMeio(opcoes, p.meio)}
+                  </TableCell>
+                  <TableCell align="right">{formatarMoeda(p.valor)}</TableCell>
+                </TableRow>
+              ))}
+              <TableRow>
                 <TableCell>
-                  {i.quantidade} × {i.nome}
+                  <strong>Total</strong>
                 </TableCell>
-                <TableCell align="right">{formatarMoeda(i.preco * i.quantidade)}</TableCell>
-              </TableRow>
-            ))}
-            {resumo.pagamentos.map((p, n) => (
-              <TableRow key={n}>
-                <TableCell>
-                  {rotuloPagamento(p)} — {contaDoMeio(opcoes, p.meio)}
+                <TableCell align="right">
+                  <strong>{brlCentavos(total)}</strong>
                 </TableCell>
-                <TableCell align="right">{formatarMoeda(p.valor)}</TableCell>
               </TableRow>
-            ))}
-            <TableRow>
-              <TableCell>
-                <strong>Total</strong>
-              </TableCell>
-              <TableCell align="right">
-                <strong>{brlCentavos(total)}</strong>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </TableContainer>
       </DialogoAcao>
 
       <DialogoAcao

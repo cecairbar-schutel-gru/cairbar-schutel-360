@@ -8,6 +8,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -148,37 +149,39 @@ export function ContaPagarPage() {
       {pagamentos.length === 0 ? (
         <TextoSuave>Nenhum pagamento registrado.</TextoSuave>
       ) : (
-        <Table size="small" aria-label="Pagamentos">
-          <TableHead>
-            <TableRow>
-              <TableCell>Vencimento</TableCell>
-              <TableCell>Pago em</TableCell>
-              <TableCell align="right">Valor</TableCell>
-              <TableCell>Conta</TableCell>
-              <TableCell>Lançamento</TableCell>
-              <TableCell>Registrado por</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {pagamentos.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>{formatarData(p.vencimento)}</TableCell>
-                <TableCell>{formatarData(p.pagoEm)}</TableCell>
-                <TableCell align="right">{formatarMoeda(p.valor)}</TableCell>
-                <TableCell>{p.contaNome}</TableCell>
-                <TableCell>
-                  {p.lancamentoId && <LinkRota to={`/financeiro/lancamentos/${p.lancamentoId}`}>nº {p.lancamentoId}</LinkRota>}
-                  {p.estornadoEm && (
-                    <Typography variant="body2" color="error.dark">
-                      Estornado em {formatarDataHora(p.estornadoEm)}
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>{p.registradoPor ?? '—'}</TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Pagamentos">
+            <TableHead>
+              <TableRow>
+                <TableCell>Vencimento</TableCell>
+                <TableCell>Pago em</TableCell>
+                <TableCell align="right">Valor</TableCell>
+                <TableCell>Conta</TableCell>
+                <TableCell>Lançamento</TableCell>
+                <TableCell>Registrado por</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {pagamentos.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>{formatarData(p.vencimento)}</TableCell>
+                  <TableCell>{formatarData(p.pagoEm)}</TableCell>
+                  <TableCell align="right">{formatarMoeda(p.valor)}</TableCell>
+                  <TableCell>{p.contaNome}</TableCell>
+                  <TableCell>
+                    {p.lancamentoId && <LinkRota to={`/financeiro/lancamentos/${p.lancamentoId}`}>nº {p.lancamentoId}</LinkRota>}
+                    {p.estornadoEm && (
+                      <Typography variant="body2" color="error.dark">
+                        Estornado em {formatarDataHora(p.estornadoEm)}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>{p.registradoPor ?? '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {pagando && (

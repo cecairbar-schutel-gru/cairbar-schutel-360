@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TablePagination,
   TableRow,
@@ -107,37 +108,39 @@ export function ListaVendasPage() {
       {!vendas.carregando && !vendas.erro && lista.length === 0 && <TextoSuave>Nenhuma venda encontrada.</TextoSuave>}
       {lista.length > 0 && (
         <>
-          <Table size="small" aria-label="Vendas encontradas">
-            <TableHead>
-              <TableRow>
-                <TableCell>Nº</TableCell>
-                <TableCell>Data/hora</TableCell>
-                <TableCell>Vendedor</TableCell>
-                <TableCell align="right">Total</TableCell>
-                <TableCell>Formas</TableCell>
-                <TableCell>Situação</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((v) => (
-                <TableRow key={v.id} hover>
-                  <TableCell>
-                    <LinkRota to={`/vendas/${v.id}`}>{v.numero}</LinkRota>
-                  </TableCell>
-                  <TableCell>{formatarDataHora(v.confirmadaEm)}</TableCell>
-                  <TableCell>
-                    {v.vendedorNome ?? '—'}
-                    {v.pdv && <Chip size="small" label="PDV" sx={{ ml: 1 }} />}
-                  </TableCell>
-                  <TableCell align="right">{formatarMoeda(v.total)}</TableCell>
-                  <TableCell>{v.meios.map((m) => ROTULO_MEIO[m]).join(', ')}</TableCell>
-                  <TableCell>
-                    <StatusVendaTag status={v.status} />
-                  </TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Vendas encontradas">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nº</TableCell>
+                  <TableCell>Data/hora</TableCell>
+                  <TableCell>Vendedor</TableCell>
+                  <TableCell align="right">Total</TableCell>
+                  <TableCell>Formas</TableCell>
+                  <TableCell>Situação</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((v) => (
+                  <TableRow key={v.id} hover>
+                    <TableCell>
+                      <LinkRota to={`/vendas/${v.id}`}>{v.numero}</LinkRota>
+                    </TableCell>
+                    <TableCell>{formatarDataHora(v.confirmadaEm)}</TableCell>
+                    <TableCell>
+                      {v.vendedorNome ?? '—'}
+                      {v.pdv && <Chip size="small" label="PDV" sx={{ ml: 1 }} />}
+                    </TableCell>
+                    <TableCell align="right">{formatarMoeda(v.total)}</TableCell>
+                    <TableCell>{v.meios.map((m) => ROTULO_MEIO[m]).join(', ')}</TableCell>
+                    <TableCell>
+                      <StatusVendaTag status={v.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TablePagination
             component="div"
             count={lista.length}

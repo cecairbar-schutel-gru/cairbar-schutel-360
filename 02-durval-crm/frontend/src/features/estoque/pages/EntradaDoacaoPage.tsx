@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -114,44 +115,46 @@ export function EntradaDoacaoPage() {
       {linhas.length === 0 ? (
         <TextoSuave>Nenhum produto adicionado.</TextoSuave>
       ) : (
-        <Table size="small" aria-label="Produtos doados">
-          <TableHead>
-            <TableRow>
-              <TableCell>Produto</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell align="right">Saldo atual</TableCell>
-              <TableCell>Quantidade</TableCell>
-              <TableCell align="right">Remover</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {linhas.map((l, i) => (
-              <TableRow key={l.produto.id}>
-                <TableCell>{l.produto.nome}</TableCell>
-                <TableCell>{l.produto.tipo === 'LIVRO' ? 'Livro' : 'Cantina'}</TableCell>
-                <TableCell align="right">{l.produto.saldo}</TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    label={`Quantidade de ${l.produto.nome}`}
-                    value={l.quantidade}
-                    onChange={(e) => {
-                      const valor = e.target.value.replace(/\D/g, '')
-                      setLinhas((ls) => ls.map((x, j) => (j === i ? { ...x, quantidade: valor } : x)))
-                    }}
-                    error={!(Number(l.quantidade) > 0)}
-                    slotProps={{ htmlInput: { inputMode: 'numeric' } }}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton aria-label={`Remover ${l.produto.nome}`} onClick={() => setLinhas((ls) => ls.filter((_, j) => j !== i))}>
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Produtos doados">
+            <TableHead>
+              <TableRow>
+                <TableCell>Produto</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell align="right">Saldo atual</TableCell>
+                <TableCell>Quantidade</TableCell>
+                <TableCell align="right">Remover</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {linhas.map((l, i) => (
+                <TableRow key={l.produto.id}>
+                  <TableCell>{l.produto.nome}</TableCell>
+                  <TableCell>{l.produto.tipo === 'LIVRO' ? 'Livro' : 'Cantina'}</TableCell>
+                  <TableCell align="right">{l.produto.saldo}</TableCell>
+                  <TableCell>
+                    <TextField
+                      size="small"
+                      label={`Quantidade de ${l.produto.nome}`}
+                      value={l.quantidade}
+                      onChange={(e) => {
+                        const valor = e.target.value.replace(/\D/g, '')
+                        setLinhas((ls) => ls.map((x, j) => (j === i ? { ...x, quantidade: valor } : x)))
+                      }}
+                      error={!(Number(l.quantidade) > 0)}
+                      slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton aria-label={`Remover ${l.produto.nome}`} onClick={() => setLinhas((ls) => ls.filter((_, j) => j !== i))}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       <TextField
@@ -172,40 +175,42 @@ export function EntradaDoacaoPage() {
       {entradas.carregando && <Carregando />}
       {entradas.dados && entradas.dados.length === 0 && <TextoSuave>Nenhuma entrada por doação ainda.</TextoSuave>}
       {entradas.dados && entradas.dados.length > 0 && (
-        <Table size="small" aria-label="Entradas por doação">
-          <TableHead>
-            <TableRow>
-              <TableCell>Nº</TableCell>
-              <TableCell>Data/hora</TableCell>
-              <TableCell>Itens</TableCell>
-              <TableCell>Observação</TableCell>
-              <TableCell>Registrada por</TableCell>
-              <TableCell>Situação</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {entradas.dados.map((e) => (
-              <TableRow key={e.id}>
-                <TableCell>{e.id}</TableCell>
-                <TableCell>{formatarDataHora(e.registradaEm)}</TableCell>
-                <TableCell>{e.itens.map((i) => `${i.quantidade} × ${i.produtoNome}`).join(', ')}</TableCell>
-                <TableCell>{e.observacao ?? '—'}</TableCell>
-                <TableCell>{e.registradaPorNome ?? '—'}</TableCell>
-                <TableCell>
-                  {e.canceladaEm ? (
-                    `Cancelada por ${e.canceladaPorNome ?? '—'}: ${e.motivoCancelamento ?? ''}`
-                  ) : possuiPapel('administrador') ? (
-                    <Button size="small" color="error" disabled={!e.cancelavel} onClick={() => setCancelando(e)}>
-                      {e.cancelavel ? 'Cancelar' : 'Unidades já saíram'}
-                    </Button>
-                  ) : (
-                    'Registrada'
-                  )}
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Entradas por doação">
+            <TableHead>
+              <TableRow>
+                <TableCell>Nº</TableCell>
+                <TableCell>Data/hora</TableCell>
+                <TableCell>Itens</TableCell>
+                <TableCell>Observação</TableCell>
+                <TableCell>Registrada por</TableCell>
+                <TableCell>Situação</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {entradas.dados.map((e) => (
+                <TableRow key={e.id}>
+                  <TableCell>{e.id}</TableCell>
+                  <TableCell>{formatarDataHora(e.registradaEm)}</TableCell>
+                  <TableCell>{e.itens.map((i) => `${i.quantidade} × ${i.produtoNome}`).join(', ')}</TableCell>
+                  <TableCell>{e.observacao ?? '—'}</TableCell>
+                  <TableCell>{e.registradaPorNome ?? '—'}</TableCell>
+                  <TableCell>
+                    {e.canceladaEm ? (
+                      `Cancelada por ${e.canceladaPorNome ?? '—'}: ${e.motivoCancelamento ?? ''}`
+                    ) : possuiPapel('administrador') ? (
+                      <Button size="small" color="error" disabled={!e.cancelavel} onClick={() => setCancelando(e)}>
+                        {e.cancelavel ? 'Cancelar' : 'Unidades já saíram'}
+                      </Button>
+                    ) : (
+                      'Registrada'
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {cancelando && (
         <ModalMotivo

@@ -1,5 +1,5 @@
 import HistoryIcon from '@mui/icons-material/History'
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
 import { useId, useState } from 'react'
 import { ROTULO_PAPEL } from '../../../auth'
 import { Aviso } from '../../../shared/components/Aviso'
@@ -7,6 +7,7 @@ import { Carregando } from '../../../shared/components/Carregando'
 import { TextoSuave } from '../../../shared/components/layout'
 import { formatarDataHora } from '../../../shared/formatters/datas'
 import { useCarregamento } from '../../../shared/hooks/useCarregamento'
+import { useTelaCheia } from '../../../shared/hooks/useTelaCheia'
 import { rotuloAcao } from '../rotulos'
 import { administracaoService } from '../services'
 import { DetalhesAuditoria } from './DetalhesAuditoria'
@@ -29,9 +30,10 @@ export function BotaoHistorico({ entidade, id }: { entidade: string; id: string 
 
 function DialogoHistorico({ entidade, id, onFechar }: { entidade: string; id: string | number; onFechar(): void }) {
   const titulo = useId()
+  const telaCheia = useTelaCheia()
   const eventos = useCarregamento(() => administracaoService.historico(entidade, id), [entidade, id])
   return (
-    <Dialog open onClose={onFechar} aria-labelledby={titulo} fullWidth maxWidth="md">
+    <Dialog open onClose={onFechar} aria-labelledby={titulo} fullScreen={telaCheia} fullWidth maxWidth="md">
       <DialogTitle id={titulo}>Histórico</DialogTitle>
       <DialogContent>
         {eventos.carregando && <Carregando linhas={3} />}
@@ -42,31 +44,33 @@ function DialogoHistorico({ entidade, id, onFechar }: { entidade: string; id: st
         )}
         {eventos.dados?.length === 0 && <TextoSuave>Nenhum registro de auditoria.</TextoSuave>}
         {eventos.dados && eventos.dados.length > 0 && (
-          <Table size="small" aria-label="Registros de auditoria">
-            <TableHead>
-              <TableRow>
-                <TableCell>Data e hora</TableCell>
-                <TableCell>Usuário</TableCell>
-                <TableCell>Ação</TableCell>
-                <TableCell>Detalhes</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {eventos.dados.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell>{formatarDataHora(e.em)}</TableCell>
-                  <TableCell>
-                    {e.autorNome ?? e.autorSubject}
-                    {e.perfil && ` (${ROTULO_PAPEL[e.perfil]})`}
-                  </TableCell>
-                  <TableCell>{rotuloAcao(e.acao)}</TableCell>
-                  <TableCell>
-                    <DetalhesAuditoria detalhes={e.detalhes} />
-                  </TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Registros de auditoria">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Data e hora</TableCell>
+                  <TableCell>Usuário</TableCell>
+                  <TableCell>Ação</TableCell>
+                  <TableCell>Detalhes</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {eventos.dados.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>{formatarDataHora(e.em)}</TableCell>
+                    <TableCell>
+                      {e.autorNome ?? e.autorSubject}
+                      {e.perfil && ` (${ROTULO_PAPEL[e.perfil]})`}
+                    </TableCell>
+                    <TableCell>{rotuloAcao(e.acao)}</TableCell>
+                    <TableCell>
+                      <DetalhesAuditoria detalhes={e.detalhes} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </DialogContent>
       <DialogActions>

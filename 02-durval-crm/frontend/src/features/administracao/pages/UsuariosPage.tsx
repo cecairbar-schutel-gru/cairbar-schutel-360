@@ -1,5 +1,5 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import { Button, Chip, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
+import { Button, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
 import { ROTULO_PAPEL } from '../../../auth'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
@@ -38,41 +38,43 @@ export function UsuariosPage() {
         </Aviso>
       )}
       {lista.dados && lista.dados.usuarios.length > 0 && (
-        <Table size="small" aria-label="Usuários do DurvalCRM">
-          <TableHead>
-            <TableRow>
-              <TableCell>Nome</TableCell>
-              <TableCell>E-mail</TableCell>
-              <TableCell>Papéis</TableCell>
-              <TableCell>Situação</TableCell>
-              <TableCell>Último acesso</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {lista.dados.usuarios.map((u) => (
-              <TableRow key={u.id} hover>
-                <TableCell>
-                  <Typography variant="body2">{u.nome}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {u.usuario}
-                  </Typography>
-                </TableCell>
-                <TableCell>{u.email || '—'}</TableCell>
-                <TableCell>{u.papeis.map((p) => ROTULO_PAPEL[p] ?? p).join(', ')}</TableCell>
-                <TableCell>
-                  <Chip size="small" color={u.habilitado ? 'success' : 'default'} label={u.habilitado ? 'Habilitado' : 'Desabilitado'} />
-                </TableCell>
-                <TableCell>{u.ultimoLogin ? formatarDataHora(u.ultimoLogin) : '—'}</TableCell>
-                <TableCell>
-                  <Button size="small" href={u.linkConsole} target="_blank" rel="noopener noreferrer" endIcon={<OpenInNewIcon />}>
-                    Gerenciar no Keycloak
-                  </Button>
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Usuários do DurvalCRM">
+            <TableHead>
+              <TableRow>
+                <TableCell>Nome</TableCell>
+                <TableCell>E-mail</TableCell>
+                <TableCell>Papéis</TableCell>
+                <TableCell>Situação</TableCell>
+                <TableCell>Último acesso</TableCell>
+                <TableCell>Ações</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {lista.dados.usuarios.map((u) => (
+                <TableRow key={u.id} hover>
+                  <TableCell>
+                    <Typography variant="body2">{u.nome}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {u.usuario}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{u.email || '—'}</TableCell>
+                  <TableCell>{u.papeis.map((p) => ROTULO_PAPEL[p] ?? p).join(', ')}</TableCell>
+                  <TableCell>
+                    <Chip size="small" color={u.habilitado ? 'success' : 'default'} label={u.habilitado ? 'Habilitado' : 'Desabilitado'} />
+                  </TableCell>
+                  <TableCell>{u.ultimoLogin ? formatarDataHora(u.ultimoLogin) : '—'}</TableCell>
+                  <TableCell>
+                    <Button size="small" href={u.linkConsole} target="_blank" rel="noopener noreferrer" endIcon={<OpenInNewIcon />}>
+                      Gerenciar no Keycloak
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {lista.dados?.configurado && !lista.dados.erro && lista.dados.usuarios.length === 0 && (
         <TextoSuave>Nenhum usuário com papel do DurvalCRM no realm.</TextoSuave>

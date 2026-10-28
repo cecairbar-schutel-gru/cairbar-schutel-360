@@ -10,6 +10,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -40,7 +41,7 @@ import { BotaoHistorico } from '../../administracao/components/HistoricoAuditori
 
 const Dados = styled('dl')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'minmax(9rem, max-content) 1fr',
+  gridTemplateColumns: 'minmax(7rem, max-content) minmax(0, 1fr)',
   columnGap: theme.spacing(2),
   rowGap: theme.spacing(1),
   margin: 0,
@@ -393,34 +394,36 @@ function ConferirRecebimento({ intencao: i, onConcluido }: { intencao: DetalheIn
             {erro}
           </Aviso>
         )}
-        <Table size="small" aria-label="Quantidades recebidas">
-          <TableHead>
-            <TableRow>
-              <TableCell>Produto</TableCell>
-              <TableCell align="right">Aprovada</TableCell>
-              <TableCell align="right">Recebida</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {i.itens.map((x) => (
-              <TableRow key={x.produtoId}>
-                <TableCell>{x.produtoNome}</TableCell>
-                <TableCell align="right">{x.quantidade}</TableCell>
-                <TableCell align="right">
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={recebidas[x.produtoId] ?? ''}
-                    onChange={(e) => setRecebidas((r) => ({ ...r, [x.produtoId]: e.target.value }))}
-                    error={numeros[x.produtoId] !== null && numeros[x.produtoId] !== x.quantidade}
-                    slotProps={{ htmlInput: { min: 0, step: 1, 'aria-label': `Quantidade recebida de ${x.produtoNome}` } }}
-                    sx={{ width: '6rem' }}
-                  />
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Quantidades recebidas">
+            <TableHead>
+              <TableRow>
+                <TableCell>Produto</TableCell>
+                <TableCell align="right">Aprovada</TableCell>
+                <TableCell align="right">Recebida</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {i.itens.map((x) => (
+                <TableRow key={x.produtoId}>
+                  <TableCell>{x.produtoNome}</TableCell>
+                  <TableCell align="right">{x.quantidade}</TableCell>
+                  <TableCell align="right">
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={recebidas[x.produtoId] ?? ''}
+                      onChange={(e) => setRecebidas((r) => ({ ...r, [x.produtoId]: e.target.value }))}
+                      error={numeros[x.produtoId] !== null && numeros[x.produtoId] !== x.quantidade}
+                      slotProps={{ htmlInput: { min: 0, step: 1, 'aria-label': `Quantidade recebida de ${x.produtoNome}` } }}
+                      sx={{ width: '6rem' }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
         {preenchidas && !confere && (
           <TextField
             label="Descreva a divergência"

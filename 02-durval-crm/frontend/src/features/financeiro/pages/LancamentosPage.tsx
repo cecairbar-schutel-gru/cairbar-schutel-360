@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -187,27 +188,29 @@ export function LancamentosPage() {
       )}
       {!carregando && !erro && itens.length === 0 && <TextoSuave>Nenhum lançamento encontrado.</TextoSuave>}
       {itens.length > 0 && (
-        <Table size="small" aria-label="Lançamentos encontrados">
-          <TableHead>
-            <TableRow>
-              <TableCell>Data</TableCell>
-              <TableCell>Descrição</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell>Categoria</TableCell>
-              <TableCell>Origem</TableCell>
-              {!conta && <TableCell>Contas</TableCell>}
-              <TableCell align="right">Valor</TableCell>
-              {conta && <TableCell align="right">Saldo</TableCell>}
-              {bancaria && <TableCell>Conciliação</TableCell>}
-              <TableCell>Usuário</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {itens.map((l) => (
-              <Linha key={l.id} item={l} comConta={!!conta} bancaria={bancaria} />
-            ))}
-          </TableBody>
-        </Table>
+        <TableContainer>
+          <Table size="small" aria-label="Lançamentos encontrados">
+            <TableHead>
+              <TableRow>
+                <TableCell>Data</TableCell>
+                <TableCell>Descrição</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell>Categoria</TableCell>
+                <TableCell>Origem</TableCell>
+                {!conta && <TableCell>Contas</TableCell>}
+                <TableCell align="right">Valor</TableCell>
+                {conta && <TableCell align="right">Saldo</TableCell>}
+                {bancaria && <TableCell>Conciliação</TableCell>}
+                <TableCell>Usuário</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {itens.map((l) => (
+                <Linha key={l.id} item={l} comConta={!!conta} bancaria={bancaria} />
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {carregando && <Carregando />}
       {ultima?.temMais && !carregando && (

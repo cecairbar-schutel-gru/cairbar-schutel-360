@@ -4,6 +4,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -56,43 +57,45 @@ export function HistoricoContribuicoesTab({ doadorId, versao }: { doadorId: numb
       {dados.itens.length === 0 ? (
         <TextoSuave>Nenhuma contribuição em {dados.ano}.</TextoSuave>
       ) : (
-        <Table aria-label="Contribuições do doador">
-          <TableHead>
-            <TableRow>
-              <TableCell>Data</TableCell>
-              <TableCell>Recibo</TableCell>
-              <TableCell>Competências</TableCell>
-              <TableCell>Doação</TableCell>
-              <TableCell>Total</TableCell>
-              <TableCell>Meios</TableCell>
-              <TableCell>Situação</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {dados.itens.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell>{formatarDataHora(c.recebidaEm)}</TableCell>
-                <TableCell>
-                  <LinkRota to={`/contribuicoes/${c.id}`}>{c.numeroRecibo}</LinkRota>
-                </TableCell>
-                <TableCell>{c.competencias.length > 0 ? listarCompetencias(c.competencias) : '—'}</TableCell>
-                <TableCell>{c.valorDoacao > 0 ? formatarMoeda(c.valorDoacao) : '—'}</TableCell>
-                <TableCell>{formatarMoeda(c.total)}</TableCell>
-                <TableCell>{c.meios.map((m) => ROTULO_MEIO[m]).join(', ')}</TableCell>
-                <TableCell>
-                  {c.status === 'CANCELADA' ? (
-                    <Pilha spacing={0.5}>
-                      <Chip size="small" color="error" label="Cancelada" sx={{ alignSelf: 'flex-start' }} />
-                      <TextoSuave>{c.motivoCancelamento}</TextoSuave>
-                    </Pilha>
-                  ) : (
-                    <Chip size="small" color="success" label="Registrada" />
-                  )}
-                </TableCell>
+        <TableContainer>
+          <Table aria-label="Contribuições do doador">
+            <TableHead>
+              <TableRow>
+                <TableCell>Data</TableCell>
+                <TableCell>Recibo</TableCell>
+                <TableCell>Competências</TableCell>
+                <TableCell>Doação</TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell>Meios</TableCell>
+                <TableCell>Situação</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {dados.itens.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>{formatarDataHora(c.recebidaEm)}</TableCell>
+                  <TableCell>
+                    <LinkRota to={`/contribuicoes/${c.id}`}>{c.numeroRecibo}</LinkRota>
+                  </TableCell>
+                  <TableCell>{c.competencias.length > 0 ? listarCompetencias(c.competencias) : '—'}</TableCell>
+                  <TableCell>{c.valorDoacao > 0 ? formatarMoeda(c.valorDoacao) : '—'}</TableCell>
+                  <TableCell>{formatarMoeda(c.total)}</TableCell>
+                  <TableCell>{c.meios.map((m) => ROTULO_MEIO[m]).join(', ')}</TableCell>
+                  <TableCell>
+                    {c.status === 'CANCELADA' ? (
+                      <Pilha spacing={0.5}>
+                        <Chip size="small" color="error" label="Cancelada" sx={{ alignSelf: 'flex-start' }} />
+                        <TextoSuave>{c.motivoCancelamento}</TextoSuave>
+                      </Pilha>
+                    ) : (
+                      <Chip size="small" color="success" label="Registrada" />
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </Pilha>
   )

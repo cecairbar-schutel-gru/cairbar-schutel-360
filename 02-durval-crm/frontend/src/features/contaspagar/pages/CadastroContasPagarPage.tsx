@@ -7,6 +7,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -64,48 +65,50 @@ export function CadastroContasPagarPage() {
       {contas.erro && <Aviso tipo="error" titulo="Erro">{contas.erro}</Aviso>}
       {!contas.carregando && !contas.erro && lista.length === 0 && <TextoSuave>Nenhuma conta a pagar cadastrada.</TextoSuave>}
       {lista.length > 0 && (
-        <Table size="small" aria-label="Contas a pagar">
-          <TableHead>
-            <TableRow>
-              <TableCell>Conta</TableCell>
-              <TableCell>Categoria</TableCell>
-              <TableCell>Recorrência</TableCell>
-              <TableCell align="right">Valor previsto</TableCell>
-              <TableCell>Próximo vencimento</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {lista.map(({ conta: c, categoriaNome, proximoVencimento, quitada }) => (
-              <TableRow key={c.id} hover>
-                <TableCell>
-                  <LinkRota to={`/contas-pagar/${c.id}`}>{c.descricao}</LinkRota>
-                  {c.favorecido && (
-                    <Typography variant="body2" color="text.secondary">
-                      {c.favorecido}
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>{categoriaNome ?? c.categoria}</TableCell>
-                <TableCell>{ROTULO_RECORRENCIA[c.recorrencia]}</TableCell>
-                <TableCell align="right">{formatarMoeda(c.valorPrevisto)}</TableCell>
-                <TableCell>
-                  {proximoVencimento ? (
-                    <Typography variant="body2" color={proximoVencimento < hojeIso ? 'error.dark' : undefined}>
-                      {formatarData(proximoVencimento)}
-                      {proximoVencimento < hojeIso && ' (vencida)'}
-                    </Typography>
-                  ) : (
-                    '—'
-                  )}
-                </TableCell>
-                <TableCell>
-                  <StatusContaPagarTag ativa={c.ativa} quitada={quitada} />
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Contas a pagar">
+            <TableHead>
+              <TableRow>
+                <TableCell>Conta</TableCell>
+                <TableCell>Categoria</TableCell>
+                <TableCell>Recorrência</TableCell>
+                <TableCell align="right">Valor previsto</TableCell>
+                <TableCell>Próximo vencimento</TableCell>
+                <TableCell>Status</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {lista.map(({ conta: c, categoriaNome, proximoVencimento, quitada }) => (
+                <TableRow key={c.id} hover>
+                  <TableCell>
+                    <LinkRota to={`/contas-pagar/${c.id}`}>{c.descricao}</LinkRota>
+                    {c.favorecido && (
+                      <Typography variant="body2" color="text.secondary">
+                        {c.favorecido}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>{categoriaNome ?? c.categoria}</TableCell>
+                  <TableCell>{ROTULO_RECORRENCIA[c.recorrencia]}</TableCell>
+                  <TableCell align="right">{formatarMoeda(c.valorPrevisto)}</TableCell>
+                  <TableCell>
+                    {proximoVencimento ? (
+                      <Typography variant="body2" color={proximoVencimento < hojeIso ? 'error.dark' : undefined}>
+                        {formatarData(proximoVencimento)}
+                        {proximoVencimento < hojeIso && ' (vencida)'}
+                      </Typography>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <StatusContaPagarTag ativa={c.ativa} quitada={quitada} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </Pilha>
   )

@@ -1,4 +1,4 @@
-import { Button, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthProvider'
@@ -83,68 +83,70 @@ export function ContasPage() {
       )}
       {contas.dados && <ContasRecebimentoCartao contas={contas.dados} editavel={admin} />}
       {contas.dados && (
-        <Table size="small" aria-label="Contas financeiras">
-          <TableHead>
-            <TableRow>
-              <TableCell>Nome</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell>Código</TableCell>
-              <TableCell>Detalhes</TableCell>
-              <TableCell align="right">Saldo inicial</TableCell>
-              <TableCell>Data de corte</TableCell>
-              <TableCell align="right">Saldo atual</TableCell>
-              <TableCell>Situação</TableCell>
-              {tesouraria && <TableCell>Ações</TableCell>}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {contas.dados.map((c) => (
-              <TableRow key={c.id} hover>
-                <TableCell>
-                  <LinkRota to={`/financeiro/lancamentos?contaId=${c.id}`}>{c.nome}</LinkRota>
-                </TableCell>
-                <TableCell>{ROTULO_TIPO_CONTA[c.tipo]}</TableCell>
-                <TableCell>
-                  <code>{c.codigo}</code>
-                </TableCell>
-                <TableCell>{detalhes(c)}</TableCell>
-                <TableCell align="right">
-                  <Valor valor={c.saldoInicial} />
-                </TableCell>
-                <TableCell>{formatarData(c.dataCorte)}</TableCell>
-                <TableCell align="right">
-                  <Valor valor={c.saldo ?? 0} />
-                </TableCell>
-                <TableCell>
-                  <ContaAtivaTag ativa={c.ativa} />
-                </TableCell>
-                {tesouraria && (
-                  <TableCell>
-                    <LinhaAcoes>
-                      {editavel(c) && (
-                        <Button size="small" onClick={() => navegar(`/financeiro/contas/${c.id}/editar`)}>
-                          Editar
-                        </Button>
-                      )}
-                      {admin && c.tipo !== 'CARTAO_A_RECEBER' && (
-                        <>
-                          <Button size="small" onClick={() => setAcao({ tipo: c.ativa ? 'inativar' : 'reativar', conta: c })}>
-                            {c.ativa ? 'Inativar' : 'Reativar'}
-                          </Button>
-                          {!c.temLancamentos && (
-                            <Button size="small" color="error" onClick={() => setAcao({ tipo: 'excluir', conta: c })}>
-                              Excluir
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </LinhaAcoes>
-                  </TableCell>
-                )}
+        <TableContainer>
+          <Table size="small" aria-label="Contas financeiras">
+            <TableHead>
+              <TableRow>
+                <TableCell>Nome</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell>Código</TableCell>
+                <TableCell>Detalhes</TableCell>
+                <TableCell align="right">Saldo inicial</TableCell>
+                <TableCell>Data de corte</TableCell>
+                <TableCell align="right">Saldo atual</TableCell>
+                <TableCell>Situação</TableCell>
+                {tesouraria && <TableCell>Ações</TableCell>}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {contas.dados.map((c) => (
+                <TableRow key={c.id} hover>
+                  <TableCell>
+                    <LinkRota to={`/financeiro/lancamentos?contaId=${c.id}`}>{c.nome}</LinkRota>
+                  </TableCell>
+                  <TableCell>{ROTULO_TIPO_CONTA[c.tipo]}</TableCell>
+                  <TableCell>
+                    <code>{c.codigo}</code>
+                  </TableCell>
+                  <TableCell>{detalhes(c)}</TableCell>
+                  <TableCell align="right">
+                    <Valor valor={c.saldoInicial} />
+                  </TableCell>
+                  <TableCell>{formatarData(c.dataCorte)}</TableCell>
+                  <TableCell align="right">
+                    <Valor valor={c.saldo ?? 0} />
+                  </TableCell>
+                  <TableCell>
+                    <ContaAtivaTag ativa={c.ativa} />
+                  </TableCell>
+                  {tesouraria && (
+                    <TableCell>
+                      <LinhaAcoes>
+                        {editavel(c) && (
+                          <Button size="small" onClick={() => navegar(`/financeiro/contas/${c.id}/editar`)}>
+                            Editar
+                          </Button>
+                        )}
+                        {admin && c.tipo !== 'CARTAO_A_RECEBER' && (
+                          <>
+                            <Button size="small" onClick={() => setAcao({ tipo: c.ativa ? 'inativar' : 'reativar', conta: c })}>
+                              {c.ativa ? 'Inativar' : 'Reativar'}
+                            </Button>
+                            {!c.temLancamentos && (
+                              <Button size="small" color="error" onClick={() => setAcao({ tipo: 'excluir', conta: c })}>
+                                Excluir
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </LinhaAcoes>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {acao && (
         <DialogoAcao

@@ -8,6 +8,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableFooter,
   TableHead,
   TableRow,
@@ -72,96 +73,98 @@ export function Carrinho({ itens, errosDoServidor, onAlterarQuantidade, onRemove
   }
 
   return (
-    <Table size="small" aria-label="Carrinho">
-      <TableHead>
-        <TableRow>
-          <TableCell>Produto</TableCell>
-          <TableCell align="right">Preço</TableCell>
-          <TableCell align="center">Quantidade</TableCell>
-          <TableCell align="right">Subtotal</TableCell>
-          <TableCell />
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {itens.map((item) => {
-          const acimaDoSaldo = item.quantidade > item.disponivel
-          const mensagem =
-            errosDoServidor.get(item.produtoId) ||
-            avisos[item.produtoId] ||
-            (acimaDoSaldo ? mensagemLimite(item.disponivel) : '')
-          const idMensagem = `carrinho-msg-${item.produtoId}`
-          return (
-            <TableRow
-              key={item.produtoId}
-              aria-invalid={mensagem ? true : undefined}
-              sx={mensagem ? { bgcolor: 'action.hover' } : undefined}
-            >
-              <TableCell>
-                <Typography component="span">{item.nome}</Typography>{' '}
-                <Chip size="small" variant="outlined" label={ROTULO_TIPO[item.tipo]} />
-                {item.precoAnterior !== null && (
-                  <Typography variant="body2" color="warning.dark">
-                    Preço mudou: era {formatarMoeda(item.precoAnterior)}
-                  </Typography>
-                )}
-                {mensagem && (
-                  <Typography id={idMensagem} variant="body2" color="error" role="alert">
-                    {mensagem}
-                  </Typography>
-                )}
-              </TableCell>
-              <TableCell align="right">{formatarMoeda(item.preco)}</TableCell>
-              <TableCell align="center">
-                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-                  <IconButton size="small" aria-label={`Diminuir ${item.nome}`} onClick={() => somar(item, -1)}>
-                    <RemoveIcon fontSize="small" />
-                  </IconButton>
-                  <TextField
-                    size="small"
-                    value={digitado[item.produtoId] ?? String(item.quantidade)}
-                    onChange={(e) => digitar(item, e.target.value)}
-                    error={Boolean(mensagem)}
-                    slotProps={{
-                      htmlInput: {
-                        inputMode: 'numeric',
-                        'aria-label': `Quantidade de ${item.nome}`,
-                        'aria-describedby': mensagem ? idMensagem : undefined,
-                        size: 3,
-                        style: { textAlign: 'center' },
-                      },
-                    }}
-                    sx={{ width: '4.5rem' }}
-                  />
-                  <IconButton size="small" aria-label={`Aumentar ${item.nome}`} onClick={() => somar(item, 1)}>
-                    <AddIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              </TableCell>
-              <TableCell align="right">{formatarMoeda(item.preco * item.quantidade)}</TableCell>
-              <TableCell align="right">
-                <Tooltip title="Remover">
-                  <IconButton aria-label={`Remover ${item.nome}`} onClick={() => onRemover(item.produtoId)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              </TableCell>
-            </TableRow>
-          )
-        })}
-      </TableBody>
-      <TableFooter>
-        <TableRow>
-          <TableCell colSpan={3}>
-            <Typography sx={{ fontWeight: 600 }}>Total</Typography>
-          </TableCell>
-          <TableCell align="right">
-            <Typography sx={{ fontWeight: 600 }} data-testid="total-carrinho">
-              {formatarMoeda(paraReais(totalDoCarrinho(itens)))}
-            </Typography>
-          </TableCell>
-          <TableCell />
-        </TableRow>
-      </TableFooter>
-    </Table>
+    <TableContainer>
+      <Table size="small" aria-label="Carrinho">
+        <TableHead>
+          <TableRow>
+            <TableCell>Produto</TableCell>
+            <TableCell align="right">Preço</TableCell>
+            <TableCell align="center">Quantidade</TableCell>
+            <TableCell align="right">Subtotal</TableCell>
+            <TableCell />
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {itens.map((item) => {
+            const acimaDoSaldo = item.quantidade > item.disponivel
+            const mensagem =
+              errosDoServidor.get(item.produtoId) ||
+              avisos[item.produtoId] ||
+              (acimaDoSaldo ? mensagemLimite(item.disponivel) : '')
+            const idMensagem = `carrinho-msg-${item.produtoId}`
+            return (
+              <TableRow
+                key={item.produtoId}
+                aria-invalid={mensagem ? true : undefined}
+                sx={mensagem ? { bgcolor: 'action.hover' } : undefined}
+              >
+                <TableCell>
+                  <Typography component="span">{item.nome}</Typography>{' '}
+                  <Chip size="small" variant="outlined" label={ROTULO_TIPO[item.tipo]} />
+                  {item.precoAnterior !== null && (
+                    <Typography variant="body2" color="warning.dark">
+                      Preço mudou: era {formatarMoeda(item.precoAnterior)}
+                    </Typography>
+                  )}
+                  {mensagem && (
+                    <Typography id={idMensagem} variant="body2" color="error" role="alert">
+                      {mensagem}
+                    </Typography>
+                  )}
+                </TableCell>
+                <TableCell align="right">{formatarMoeda(item.preco)}</TableCell>
+                <TableCell align="center">
+                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                    <IconButton size="small" aria-label={`Diminuir ${item.nome}`} onClick={() => somar(item, -1)}>
+                      <RemoveIcon fontSize="small" />
+                    </IconButton>
+                    <TextField
+                      size="small"
+                      value={digitado[item.produtoId] ?? String(item.quantidade)}
+                      onChange={(e) => digitar(item, e.target.value)}
+                      error={Boolean(mensagem)}
+                      slotProps={{
+                        htmlInput: {
+                          inputMode: 'numeric',
+                          'aria-label': `Quantidade de ${item.nome}`,
+                          'aria-describedby': mensagem ? idMensagem : undefined,
+                          size: 3,
+                          style: { textAlign: 'center' },
+                        },
+                      }}
+                      sx={{ width: '4.5rem' }}
+                    />
+                    <IconButton size="small" aria-label={`Aumentar ${item.nome}`} onClick={() => somar(item, 1)}>
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell align="right">{formatarMoeda(item.preco * item.quantidade)}</TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Remover">
+                    <IconButton aria-label={`Remover ${item.nome}`} onClick={() => onRemover(item.produtoId)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={3}>
+              <Typography sx={{ fontWeight: 600 }}>Total</Typography>
+            </TableCell>
+            <TableCell align="right">
+              <Typography sx={{ fontWeight: 600 }} data-testid="total-carrinho">
+                {formatarMoeda(paraReais(totalDoCarrinho(itens)))}
+              </Typography>
+            </TableCell>
+            <TableCell />
+          </TableRow>
+        </TableFooter>
+      </Table>
+    </TableContainer>
   )
 }

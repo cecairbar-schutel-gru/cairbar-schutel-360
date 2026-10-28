@@ -18,7 +18,7 @@ type Campo = keyof TextosModelo
 
 const Colunas = styled('div')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(20rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(20rem, 100%), 1fr))',
   gap: theme.spacing(3),
   alignItems: 'start',
 }))

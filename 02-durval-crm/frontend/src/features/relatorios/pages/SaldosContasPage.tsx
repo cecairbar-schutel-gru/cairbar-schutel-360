@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Chip, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Box, Card, CardContent, Chip, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
 import { Indicador } from '../../../shared/components/Indicador'
@@ -101,63 +101,65 @@ function TabelaContas({ titulo, contas, totais, s, bancos }: {
           <TextoSuave>Nenhuma conta.</TextoSuave>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" aria-label={titulo}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Conta</TableCell>
-                  {!naData && (
-                    <>
-                      <TableCell align="right">Saldo inicial</TableCell>
-                      <TableCell align="right">Entradas</TableCell>
-                      <TableCell align="right">Saídas</TableCell>
-                      <TableCell align="right">Transf. recebidas</TableCell>
-                      <TableCell align="right">Transf. enviadas</TableCell>
-                    </>
-                  )}
-                  <TableCell align="right">{naData ? 'Saldo' : 'Saldo final'}</TableCell>
-                  {bancos && <TableCell>Conciliada até</TableCell>}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {contas.map((c) => (
-                  <TableRow key={c.contaId}>
-                    <TableCell>
-                      <LinkRota to={linkLancamentos({ de: naData ? '' : de, ate: s.ate, contaId: c.contaId })}>{c.nome}</LinkRota>
-                      {!c.ativa && <Chip size="small" variant="outlined" label="inativa" sx={{ ml: 1 }} />}
-                    </TableCell>
-                    {!naData && (
-                      <>
-                        <TableCell align="right"><Dinheiro valor={c.saldoInicial} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={c.entradas} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={c.saidas} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={c.transferenciasEntrada} /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={c.transferenciasSaida} /></TableCell>
-                      </>
-                    )}
-                    <TableCell align="right"><Dinheiro valor={c.saldoFinal} negrito /></TableCell>
-                    {bancos && <TableCell>{c.conciliadaAte ? formatarData(c.conciliadaAte) : 'Nunca conciliada'}</TableCell>}
-                  </TableRow>
-                ))}
-              </TableBody>
-              {totais && (
-                <TableFooter>
+            <TableContainer>
+              <Table size="small" aria-label={titulo}>
+                <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
+                    <TableCell>Conta</TableCell>
                     {!naData && (
                       <>
-                        <TableCell align="right"><Dinheiro valor={totais.saldoInicial} negrito /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={totais.entradas} negrito /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={totais.saidas} negrito /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={totais.transferenciasEntrada} negrito /></TableCell>
-                        <TableCell align="right"><Dinheiro valor={totais.transferenciasSaida} negrito /></TableCell>
+                        <TableCell align="right">Saldo inicial</TableCell>
+                        <TableCell align="right">Entradas</TableCell>
+                        <TableCell align="right">Saídas</TableCell>
+                        <TableCell align="right">Transf. recebidas</TableCell>
+                        <TableCell align="right">Transf. enviadas</TableCell>
                       </>
                     )}
-                    <TableCell align="right"><Dinheiro valor={totais.saldoFinal} negrito /></TableCell>
-                    {bancos && <TableCell />}
+                    <TableCell align="right">{naData ? 'Saldo' : 'Saldo final'}</TableCell>
+                    {bancos && <TableCell>Conciliada até</TableCell>}
                   </TableRow>
-                </TableFooter>
-              )}
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {contas.map((c) => (
+                    <TableRow key={c.contaId}>
+                      <TableCell>
+                        <LinkRota to={linkLancamentos({ de: naData ? '' : de, ate: s.ate, contaId: c.contaId })}>{c.nome}</LinkRota>
+                        {!c.ativa && <Chip size="small" variant="outlined" label="inativa" sx={{ ml: 1 }} />}
+                      </TableCell>
+                      {!naData && (
+                        <>
+                          <TableCell align="right"><Dinheiro valor={c.saldoInicial} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={c.entradas} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={c.saidas} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={c.transferenciasEntrada} /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={c.transferenciasSaida} /></TableCell>
+                        </>
+                      )}
+                      <TableCell align="right"><Dinheiro valor={c.saldoFinal} negrito /></TableCell>
+                      {bancos && <TableCell>{c.conciliadaAte ? formatarData(c.conciliadaAte) : 'Nunca conciliada'}</TableCell>}
+                    </TableRow>
+                  ))}
+                </TableBody>
+                {totais && (
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
+                      {!naData && (
+                        <>
+                          <TableCell align="right"><Dinheiro valor={totais.saldoInicial} negrito /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={totais.entradas} negrito /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={totais.saidas} negrito /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={totais.transferenciasEntrada} negrito /></TableCell>
+                          <TableCell align="right"><Dinheiro valor={totais.transferenciasSaida} negrito /></TableCell>
+                        </>
+                      )}
+                      <TableCell align="right"><Dinheiro valor={totais.saldoFinal} negrito /></TableCell>
+                      {bancos && <TableCell />}
+                    </TableRow>
+                  </TableFooter>
+                )}
+              </Table>
+            </TableContainer>
           </Box>
         )}
       </CardContent>

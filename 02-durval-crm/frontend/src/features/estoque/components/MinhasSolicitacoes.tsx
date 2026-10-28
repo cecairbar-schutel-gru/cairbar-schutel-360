@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
 import { LinkRota } from '../../../shared/components/LinkRota'
@@ -25,33 +25,35 @@ export function MinhasSolicitacoes({ limite = 5 }: { limite?: number }) {
   if (itens.length === 0) return <TextoSuave>Você não tem pedidos de baixa, preço ou inativação.</TextoSuave>
   return (
     <>
-      <Table size="small" aria-label="Minhas solicitações">
-        <TableHead>
-          <TableRow>
-            <TableCell>Data</TableCell>
-            <TableCell>Pedido</TableCell>
-            <TableCell>Produto</TableCell>
-            <TableCell>Detalhe</TableCell>
-            <TableCell>Situação</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {itens.map((s) => (
-            <TableRow key={s.id}>
-              <TableCell>{formatarDataHora(s.solicitadaEm)}</TableCell>
-              <TableCell>{ROTULO_TIPO_SOLICITACAO[s.tipo]}</TableCell>
-              <TableCell>{s.produtoNome}</TableCell>
-              <TableCell>
-                <DescricaoSolicitacao s={s} />
-              </TableCell>
-              <TableCell>
-                <StatusSolicitacaoTag status={s.status} />
-                {s.motivoDecisao && <TextoSuave>{s.motivoDecisao}</TextoSuave>}
-              </TableCell>
+      <TableContainer>
+        <Table size="small" aria-label="Minhas solicitações">
+          <TableHead>
+            <TableRow>
+              <TableCell>Data</TableCell>
+              <TableCell>Pedido</TableCell>
+              <TableCell>Produto</TableCell>
+              <TableCell>Detalhe</TableCell>
+              <TableCell>Situação</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {itens.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell>{formatarDataHora(s.solicitadaEm)}</TableCell>
+                <TableCell>{ROTULO_TIPO_SOLICITACAO[s.tipo]}</TableCell>
+                <TableCell>{s.produtoNome}</TableCell>
+                <TableCell>
+                  <DescricaoSolicitacao s={s} />
+                </TableCell>
+                <TableCell>
+                  <StatusSolicitacaoTag status={s.status} />
+                  {s.motivoDecisao && <TextoSuave>{s.motivoDecisao}</TextoSuave>}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
       <LinkRota to="/estoque/solicitacoes">Ver todas as minhas solicitações</LinkRota>
     </>
   )

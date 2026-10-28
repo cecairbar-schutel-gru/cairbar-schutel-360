@@ -24,11 +24,7 @@ export function TituloPagina({
   children: ReactNode
 }) {
   return (
-    <Typography
-      id={id}
-      variant="h1"
-      sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}
-    >
+    <Typography id={id} variant="h1">
       {children}
     </Typography>
   )

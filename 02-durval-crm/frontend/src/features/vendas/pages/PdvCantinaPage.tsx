@@ -28,8 +28,6 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material'
 import QRCode from 'qrcode'
 import { useEffect, useId, useRef, useState, type ComponentType } from 'react'
@@ -42,6 +40,7 @@ import { LinhaAcoes, Pilha, TextoSuave, TituloPagina } from '../../../shared/com
 import { formatarDataHora } from '../../../shared/formatters/datas'
 import { formatarMoeda } from '../../../shared/formatters/formatadores'
 import { useCarregamento } from '../../../shared/hooks/useCarregamento'
+import { useTelaCheia } from '../../../shared/hooks/useTelaCheia'
 import { CampoValor } from '../../../shared/pagamento/CamposPagamento'
 import { brlCentavos, lerValor, novaChaveIdempotencia, paraCentavos, rotuloPagamento } from '../../../shared/pagamento/regras'
 import { gerarPayloadPix } from '../../../shared/pix/brcode'
@@ -200,7 +199,7 @@ function Pdv({ opcoes }: { opcoes: OpcoesVenda }) {
               <Typography variant="subtitle1" component="h2" color="text.secondary" sx={{ mb: 1 }}>
                 {categoria}
               </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(11rem, 1fr))', gap: 1.5 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(11rem, 100%), 1fr))', gap: 1.5 }}>
                 {lista
                   .filter((p) => grupo(p) === categoria)
                   .map((p) => {
@@ -430,8 +429,7 @@ interface PropsCobranca {
  * calcula o troco.
  */
 function DialogoCobranca({ itens, contas, organizacao, onFechar, onRegistrada }: PropsCobranca) {
-  const theme = useTheme()
-  const telaCheia = useMediaQuery(theme.breakpoints.down('sm'))
+  const telaCheia = useTelaCheia()
   const idTitulo = useId()
   const [forma, setForma] = useState<FormaPdv | null>(null)
   const [entregue, setEntregue] = useState('')
@@ -564,10 +562,11 @@ function DialogoCobranca({ itens, contas, organizacao, onFechar, onRegistrada }:
 /** Última venda do próprio usuário: número, itens, forma e total, com o cancelamento se estiver concluída. */
 function DialogoUltimaVenda({ onFechar, onCancelar }: { onFechar(): void; onCancelar(venda: VendaRegistrada): void }) {
   const idTitulo = useId()
+  const telaCheia = useTelaCheia()
   const ultima = useCarregamento(() => vendaService.ultima(), [])
   const venda = ultima.dados
   return (
-    <Dialog open onClose={onFechar} fullWidth maxWidth="sm" aria-labelledby={idTitulo}>
+    <Dialog open onClose={onFechar} fullScreen={telaCheia} fullWidth maxWidth="sm" aria-labelledby={idTitulo}>
       <DialogTitle id={idTitulo}>Última venda</DialogTitle>
       <DialogContent>
         {ultima.carregando && <Carregando />}

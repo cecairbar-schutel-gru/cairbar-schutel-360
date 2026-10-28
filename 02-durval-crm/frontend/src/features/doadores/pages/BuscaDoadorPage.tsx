@@ -10,6 +10,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -121,38 +122,40 @@ export function BuscaDoadorPage() {
       )}
       {ativa && dados && dados.length > 0 && (
         <div aria-live="polite">
-          <Table aria-label="Resultados da busca de doadores">
-            <TableHead>
-              <TableRow>
-                <TableCell>Nome</TableCell>
-                <TableCell>Telefone</TableCell>
-                <TableCell>E-mail</TableCell>
-                <TableCell>Situação</TableCell>
-                <TableCell>Pendências</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {dados.map((d) => (
-                <TableRow key={d.id} hover>
-                  <TableCell>
-                    <LinkRota to={`/doadores/${d.id}?acao=receber`}>
-                      {d.nome}
-                    </LinkRota>
-                  </TableCell>
-                  <TableCell>{formatarTelefone(d.telefonePrincipal)}</TableCell>
-                  <TableCell>{d.emailPrincipal ?? '—'}</TableCell>
-                  <TableCell>
-                    {d.status === 'INATIVO' ? (
-                      <Chip size="small" label="Inativo" />
-                    ) : (
-                      <StatusTag status={d.status} />
-                    )}
-                  </TableCell>
-                  <TableCell>{d.competenciasPendentes}</TableCell>
+          <TableContainer>
+            <Table aria-label="Resultados da busca de doadores">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nome</TableCell>
+                  <TableCell>Telefone</TableCell>
+                  <TableCell>E-mail</TableCell>
+                  <TableCell>Situação</TableCell>
+                  <TableCell>Pendências</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {dados.map((d) => (
+                  <TableRow key={d.id} hover>
+                    <TableCell>
+                      <LinkRota to={`/doadores/${d.id}?acao=receber`}>
+                        {d.nome}
+                      </LinkRota>
+                    </TableCell>
+                    <TableCell>{formatarTelefone(d.telefonePrincipal)}</TableCell>
+                    <TableCell>{d.emailPrincipal ?? '—'}</TableCell>
+                    <TableCell>
+                      {d.status === 'INATIVO' ? (
+                        <Chip size="small" label="Inativo" />
+                      ) : (
+                        <StatusTag status={d.status} />
+                      )}
+                    </TableCell>
+                    <TableCell>{d.competenciasPendentes}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </div>
       )}
     </Pilha>

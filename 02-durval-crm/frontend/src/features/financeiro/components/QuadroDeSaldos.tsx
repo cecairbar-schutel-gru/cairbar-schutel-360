@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
 import { LinkRota } from '../../../shared/components/LinkRota'
 import type { QuadroSaldos, SaldoConta } from '../types'
 import { Valor } from './Tags'
@@ -38,28 +38,30 @@ export function QuadroDeSaldos({ saldos, comExtrato }: Props) {
     )
   const mostraTotal = saldos.bancos.length > 0 || saldos.cartaoAReceber !== null || saldos.caixas.length > 1
   return (
-    <Table size="small" aria-label="Saldos por conta">
-      <TableHead>
-        <TableRow>
-          <TableCell>Conta</TableCell>
-          <TableCell align="right">Saldo</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {grupo('Caixas', saldos.caixas, saldos.subtotalCaixas)}
-        {grupo('Contas bancárias', saldos.bancos, saldos.subtotalBancos)}
-        {saldos.cartaoAReceber && grupo('Cartão a receber', [saldos.cartaoAReceber], saldos.cartaoAReceber.saldo ?? 0)}
-        {mostraTotal && (
+    <TableContainer>
+      <Table size="small" aria-label="Saldos por conta">
+        <TableHead>
           <TableRow>
-            <TableCell component="th" scope="row" sx={{ fontWeight: 700 }}>
-              Total geral
-            </TableCell>
-            <TableCell align="right">
-              <Valor valor={saldos.total} negrito />
-            </TableCell>
+            <TableCell>Conta</TableCell>
+            <TableCell align="right">Saldo</TableCell>
           </TableRow>
-        )}
-      </TableBody>
-    </Table>
+        </TableHead>
+        <TableBody>
+          {grupo('Caixas', saldos.caixas, saldos.subtotalCaixas)}
+          {grupo('Contas bancárias', saldos.bancos, saldos.subtotalBancos)}
+          {saldos.cartaoAReceber && grupo('Cartão a receber', [saldos.cartaoAReceber], saldos.cartaoAReceber.saldo ?? 0)}
+          {mostraTotal && (
+            <TableRow>
+              <TableCell component="th" scope="row" sx={{ fontWeight: 700 }}>
+                Total geral
+              </TableCell>
+              <TableCell align="right">
+                <Valor valor={saldos.total} negrito />
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }

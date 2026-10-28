@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardContent, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
+import { Box, Button, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -23,7 +23,7 @@ import type { Checklist, PainelFechamento, ResumoPeriodo, SituacaoJanela } from 
 
 const Colunas = styled('div')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(22rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(22rem, 100%), 1fr))',
   gap: theme.spacing(3),
   alignItems: 'start',
 }))
@@ -272,57 +272,59 @@ function TabelaPeriodos({
 }) {
   if (periodos.length === 0) return <TextoSuave>Nenhum período.</TextoSuave>
   return (
-    <Table aria-label="Períodos">
-      <TableHead>
-        <TableRow>
-          <TableCell>Mês</TableCell>
-          <TableCell>Situação</TableCell>
-          <TableCell>Fechamento</TableCell>
-          <TableCell align="right">Versões</TableCell>
-          <TableCell>Ações</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {periodos.map((p) => (
-          <TableRow key={p.mes} hover selected={p.aFechar}>
-            <TableCell>
-              {nomeDoMes(p.mes)}
-              {p.aFechar && (
-                <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
-                  Mês a fechar
-                </Typography>
-              )}
-            </TableCell>
-            <TableCell>
-              <SituacaoTag situacao={p.situacao} />
-            </TableCell>
-            <TableCell>
-              {p.fechadoEm ? `${formatarDataHora(p.fechadoEm)} · ${p.fechadoPor}` : '—'}
-              {p.situacao === 'REABERTO' && p.reabertoEm && (
-                <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
-                  Reaberto em {formatarDataHora(p.reabertoEm)} por {p.reabertoPor}
-                </Typography>
-              )}
-            </TableCell>
-            <TableCell align="right">{p.versoes}</TableCell>
-            <TableCell>
-              <LinhaAcoes>
-                <Button size="small" onClick={() => onDemonstrativo(p.mes)} aria-label={`Demonstrativo de ${nomeDoMes(p.mes)}`}>
-                  Demonstrativo
-                </Button>
-                <Button size="small" onClick={() => onHistorico(p.mes)} aria-label={`Histórico de ${nomeDoMes(p.mes)}`}>
-                  Histórico
-                </Button>
-                {administrador && p.podeReabrir && (
-                  <Button size="small" color="error" variant="outlined" onClick={() => onReabrir(p.mes)} aria-label={`Reabrir ${nomeDoMes(p.mes)}`}>
-                    Reabrir
-                  </Button>
-                )}
-              </LinhaAcoes>
-            </TableCell>
+    <TableContainer>
+      <Table aria-label="Períodos">
+        <TableHead>
+          <TableRow>
+            <TableCell>Mês</TableCell>
+            <TableCell>Situação</TableCell>
+            <TableCell>Fechamento</TableCell>
+            <TableCell align="right">Versões</TableCell>
+            <TableCell>Ações</TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHead>
+        <TableBody>
+          {periodos.map((p) => (
+            <TableRow key={p.mes} hover selected={p.aFechar}>
+              <TableCell>
+                {nomeDoMes(p.mes)}
+                {p.aFechar && (
+                  <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
+                    Mês a fechar
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell>
+                <SituacaoTag situacao={p.situacao} />
+              </TableCell>
+              <TableCell>
+                {p.fechadoEm ? `${formatarDataHora(p.fechadoEm)} · ${p.fechadoPor}` : '—'}
+                {p.situacao === 'REABERTO' && p.reabertoEm && (
+                  <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
+                    Reaberto em {formatarDataHora(p.reabertoEm)} por {p.reabertoPor}
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell align="right">{p.versoes}</TableCell>
+              <TableCell>
+                <LinhaAcoes>
+                  <Button size="small" onClick={() => onDemonstrativo(p.mes)} aria-label={`Demonstrativo de ${nomeDoMes(p.mes)}`}>
+                    Demonstrativo
+                  </Button>
+                  <Button size="small" onClick={() => onHistorico(p.mes)} aria-label={`Histórico de ${nomeDoMes(p.mes)}`}>
+                    Histórico
+                  </Button>
+                  {administrador && p.podeReabrir && (
+                    <Button size="small" color="error" variant="outlined" onClick={() => onReabrir(p.mes)} aria-label={`Reabrir ${nomeDoMes(p.mes)}`}>
+                      Reabrir
+                    </Button>
+                  )}
+                </LinhaAcoes>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }

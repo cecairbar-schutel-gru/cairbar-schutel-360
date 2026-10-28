@@ -32,13 +32,13 @@ import type { PainelTesoureiro } from '../types'
 
 const GradeAtalhos = styled('div')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(9rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(min(9rem, 100%), 1fr))',
   gap: theme.spacing(2),
 }))
 
 const Colunas = styled('div')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(22rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(22rem, 100%), 1fr))',
   gap: theme.spacing(3),
   alignItems: 'start',
 }))
@@ -102,7 +102,7 @@ export function PainelTesoureiroPage() {
         </Card>
         <Card variant="outlined">
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2, justifyContent: 'space-between', alignItems: 'baseline' }}>
               <Typography variant="h6" component="h2" gutterBottom>
                 Pendências do período
               </Typography>

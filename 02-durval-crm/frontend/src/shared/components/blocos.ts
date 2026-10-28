@@ -3,7 +3,7 @@ import { styled } from '@mui/material/styles'
 /** Grade responsiva de campos de formulário. */
 export const GradeForm = styled('div')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(16rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(16rem, 100%), 1fr))',
   gap: theme.spacing(2),
 }))
 

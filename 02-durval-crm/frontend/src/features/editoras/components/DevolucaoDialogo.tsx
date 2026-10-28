@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableRow, TextField } from '@mui/material'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material'
 import { useState } from 'react'
 import { mensagemDeErro } from '../../../shared/api/http'
 import { Aviso } from '../../../shared/components/Aviso'
@@ -58,29 +58,31 @@ export function DevolucaoDialogo({
         <TextoSuave>As unidades saem do estoque consignado desta remessa. Nenhum valor é lançado nem devido à editora.</TextoSuave>
         {erro && <Aviso tipo="error" titulo="Não foi possível registrar">{erro}</Aviso>}
         {erros.itens && <Aviso tipo="warning" titulo="Quantidades">{erros.itens}</Aviso>}
-        <Table size="small" aria-label="Quantidades devolvidas">
-          <TableHead>
-            <TableRow>
-              <TableCell>Título</TableCell>
-              <TableCell align="right">Restante</TableCell>
-              <TableCell sx={{ width: '9rem' }}>Devolver</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {comSaldo.map((i) => (
-              <TableRow key={i.produtoId}>
-                <TableCell>{i.titulo}</TableCell>
-                <TableCell align="right">{i.restante}</TableCell>
-                <TableCell>
-                  <TextField size="small" label={`Devolver de ${i.titulo}`} value={quantidades[i.produtoId] ?? ''}
-                    onChange={(e) => setQuantidades((q) => ({ ...q, [i.produtoId]: e.target.value }))}
-                    error={!!erros[`itens[${i.produtoId}]`]} helperText={erros[`itens[${i.produtoId}]`] ?? ' '}
-                    slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Quantidades devolvidas">
+            <TableHead>
+              <TableRow>
+                <TableCell>Título</TableCell>
+                <TableCell align="right">Restante</TableCell>
+                <TableCell sx={{ width: '9rem' }}>Devolver</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {comSaldo.map((i) => (
+                <TableRow key={i.produtoId}>
+                  <TableCell>{i.titulo}</TableCell>
+                  <TableCell align="right">{i.restante}</TableCell>
+                  <TableCell>
+                    <TextField size="small" label={`Devolver de ${i.titulo}`} value={quantidades[i.produtoId] ?? ''}
+                      onChange={(e) => setQuantidades((q) => ({ ...q, [i.produtoId]: e.target.value }))}
+                      error={!!erros[`itens[${i.produtoId}]`]} helperText={erros[`itens[${i.produtoId}]`] ?? ' '}
+                      slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
         <TextField type="date" label="Data da devolução" required value={data} onChange={(e) => setData(e.target.value)}
           error={!!erros.devolvidaEm} helperText={erros.devolvidaEm ?? ' '}
           slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: remessa.recebidaEm, max: paraIsoData(hoje()) } }} />

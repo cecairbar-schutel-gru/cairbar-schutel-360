@@ -2,15 +2,19 @@ import SearchIcon from '@mui/icons-material/Search'
 import {
   Button,
   Chip,
+  IconButton,
   InputAdornment,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
   Typography,
+  useMediaQuery,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthProvider'
@@ -30,6 +34,9 @@ export function PainelOperadorPage() {
   const { usuario } = useAuth()
   const navegar = useNavigate()
   const [termo, setTermo] = useState('')
+  // No celular o botão vira só o ícone e o rótulo fica no alto, para não passar por baixo dele.
+  const theme = useTheme()
+  const amplo = useMediaQuery(theme.breakpoints.up('sm'))
   const painel = useCarregamento(() => contribuicaoService.painelOperador(), [])
   const dia = paraIsoData(hoje())
   const aniversariantes = useCarregamento(() => doadorService.listarAniversariantes(dia, dia), [dia])
@@ -49,12 +56,19 @@ export function PainelOperadorPage() {
           value={termo}
           onChange={(e) => setTermo(e.target.value)}
           slotProps={{
+            inputLabel: amplo ? undefined : { shrink: true },
             input: {
               endAdornment: (
                 <InputAdornment position="end">
-                  <Button type="submit" startIcon={<SearchIcon />}>
-                    Buscar
-                  </Button>
+                  {amplo ? (
+                    <Button type="submit" startIcon={<SearchIcon />}>
+                      Buscar
+                    </Button>
+                  ) : (
+                    <IconButton type="submit" aria-label="Buscar" edge="end">
+                      <SearchIcon />
+                    </IconButton>
+                  )}
                 </InputAdornment>
               ),
             },
@@ -100,29 +114,31 @@ export function PainelOperadorPage() {
           {painel.dados.ultimas.length === 0 ? (
             <TextoSuave>Nenhuma contribuição registrada por você.</TextoSuave>
           ) : (
-            <Table size="small" aria-label="Minhas últimas contribuições">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Data/hora</TableCell>
-                  <TableCell>Recibo</TableCell>
-                  <TableCell>Doador</TableCell>
-                  <TableCell align="right">Total</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {painel.dados.ultimas.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell>{formatarDataHora(c.recebidaEm)}</TableCell>
-                    <TableCell>
-                      <LinkRota to={`/contribuicoes/${c.id}`}>{c.numeroRecibo}</LinkRota>{' '}
-                      {c.status === 'CANCELADA' && <Chip size="small" color="error" label="Cancelada" />}
-                    </TableCell>
-                    <TableCell>{c.doadorNome}</TableCell>
-                    <TableCell align="right">{formatarMoeda(c.total)}</TableCell>
+            <TableContainer>
+              <Table size="small" aria-label="Minhas últimas contribuições">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Data/hora</TableCell>
+                    <TableCell>Recibo</TableCell>
+                    <TableCell>Doador</TableCell>
+                    <TableCell align="right">Total</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {painel.dados.ultimas.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell>{formatarDataHora(c.recebidaEm)}</TableCell>
+                      <TableCell>
+                        <LinkRota to={`/contribuicoes/${c.id}`}>{c.numeroRecibo}</LinkRota>{' '}
+                        {c.status === 'CANCELADA' && <Chip size="small" color="error" label="Cancelada" />}
+                      </TableCell>
+                      <TableCell>{c.doadorNome}</TableCell>
+                      <TableCell align="right">{formatarMoeda(c.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </>
       )}

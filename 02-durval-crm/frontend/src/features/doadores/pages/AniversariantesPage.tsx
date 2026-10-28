@@ -5,6 +5,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   ToggleButton,
@@ -130,46 +131,48 @@ export function AniversariantesPage() {
           {dados.itens.length === 0 ? (
             <Typography>Nenhum aniversariante no período.</Typography>
           ) : (
-            <Table aria-label="Aniversariantes do período">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Nome</TableCell>
-                  <TableCell>Dia/mês</TableCell>
-                  <TableCell>Idade a completar</TableCell>
-                  <TableCell>Canais com consentimento</TableCell>
-                  <TableCell>Saudação</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {dados.itens.map((a) => (
-                  <TableRow key={`${a.doadorId}-${a.dataAniversario}`}>
-                    <TableCell>
-                      <LinkRota to={`/doadores/${a.doadorId}`}>
-                        {a.nome}
-                      </LinkRota>
-                    </TableCell>
-                    <TableCell>{formatarDiaMes(a.dataAniversario)}</TableCell>
-                    <TableCell>{a.idadeACompletar}</TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        {a.consentimentoWhatsapp === 'SIM' && (
-                          <Chip size="small" color="success" label="WhatsApp" />
-                        )}
-                        {a.consentimentoEmail === 'SIM' && (
-                          <Chip size="small" color="info" label="E-mail" />
-                        )}
-                        {a.consentimentoWhatsapp !== 'SIM' &&
-                          a.consentimentoEmail !== 'SIM' &&
-                          '—'}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <AcoesSaudacao a={a} />
-                    </TableCell>
+            <TableContainer>
+              <Table aria-label="Aniversariantes do período">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Nome</TableCell>
+                    <TableCell>Dia/mês</TableCell>
+                    <TableCell>Idade a completar</TableCell>
+                    <TableCell>Canais com consentimento</TableCell>
+                    <TableCell>Saudação</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {dados.itens.map((a) => (
+                    <TableRow key={`${a.doadorId}-${a.dataAniversario}`}>
+                      <TableCell>
+                        <LinkRota to={`/doadores/${a.doadorId}`}>
+                          {a.nome}
+                        </LinkRota>
+                      </TableCell>
+                      <TableCell>{formatarDiaMes(a.dataAniversario)}</TableCell>
+                      <TableCell>{a.idadeACompletar}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1}>
+                          {a.consentimentoWhatsapp === 'SIM' && (
+                            <Chip size="small" color="success" label="WhatsApp" />
+                          )}
+                          {a.consentimentoEmail === 'SIM' && (
+                            <Chip size="small" color="info" label="E-mail" />
+                          )}
+                          {a.consentimentoWhatsapp !== 'SIM' &&
+                            a.consentimentoEmail !== 'SIM' &&
+                            '—'}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <AcoesSaudacao a={a} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </>
       )}

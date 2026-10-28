@@ -1,4 +1,4 @@
-import { Button, Table, TableBody, TableCell, TableFooter, TableHead, TableRow } from '@mui/material'
+import { Button, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthProvider'
 import { Aviso } from '../../../shared/components/Aviso'
@@ -49,43 +49,45 @@ export function SaldosEditorasPage() {
           {dados.editoras.length === 0 ? (
             <TextoSuave>Nenhuma obrigação com editoras até agora.</TextoSuave>
           ) : (
-            <Table size="small" aria-label="Saldo por editora">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Editora</TableCell>
-                  <TableCell align="right">Saldo devido</TableCell>
-                  <TableCell>Obrigação mais antiga</TableCell>
-                  <TableCell>Último pagamento</TableCell>
-                  <TableCell align="right">Ações</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {dados.editoras.map((e) => (
-                  <TableRow key={e.editoraId} hover>
-                    <TableCell>
-                      <LinkRota to={`/editoras/${e.editoraId}/saldo`}>{e.nome}</LinkRota>
-                    </TableCell>
-                    <TableCell align="right">{formatarMoeda(e.saldoDevido)}</TableCell>
-                    <TableCell>{formatarData(e.obrigacaoMaisAntiga)}</TableCell>
-                    <TableCell>{formatarData(e.ultimoPagamento)}</TableCell>
-                    <TableCell align="right">
-                      {tesoureiro && e.saldoDevido > 0 && (
-                        <Button size="small" onClick={() => navegar(`/editoras/pagamento?editoraId=${e.editoraId}`)}>
-                          Pagar
-                        </Button>
-                      )}
-                    </TableCell>
+            <TableContainer>
+              <Table size="small" aria-label="Saldo por editora">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Editora</TableCell>
+                    <TableCell align="right">Saldo devido</TableCell>
+                    <TableCell>Obrigação mais antiga</TableCell>
+                    <TableCell>Último pagamento</TableCell>
+                    <TableCell align="right">Ações</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell>Total</TableCell>
-                  <TableCell align="right">{formatarMoeda(dados.total)}</TableCell>
-                  <TableCell colSpan={3} />
-                </TableRow>
-              </TableFooter>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {dados.editoras.map((e) => (
+                    <TableRow key={e.editoraId} hover>
+                      <TableCell>
+                        <LinkRota to={`/editoras/${e.editoraId}/saldo`}>{e.nome}</LinkRota>
+                      </TableCell>
+                      <TableCell align="right">{formatarMoeda(e.saldoDevido)}</TableCell>
+                      <TableCell>{formatarData(e.obrigacaoMaisAntiga)}</TableCell>
+                      <TableCell>{formatarData(e.ultimoPagamento)}</TableCell>
+                      <TableCell align="right">
+                        {tesoureiro && e.saldoDevido > 0 && (
+                          <Button size="small" onClick={() => navegar(`/editoras/pagamento?editoraId=${e.editoraId}`)}>
+                            Pagar
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell>Total</TableCell>
+                    <TableCell align="right">{formatarMoeda(dados.total)}</TableCell>
+                    <TableCell colSpan={3} />
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            </TableContainer>
           )}
         </>
       )}

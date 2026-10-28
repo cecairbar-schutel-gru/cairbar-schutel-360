@@ -4,6 +4,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -119,85 +120,87 @@ export function ConciliacaoPage() {
         <TextoSuave>Nenhuma conta bancária ativa.</TextoSuave>
       )}
       {contas.dados && contas.dados.length > 0 && (
-        <Table aria-label="Contas bancárias">
-          <TableHead>
-            <TableRow>
-              <TableCell>Conta</TableCell>
-              <TableCell>Conciliada até</TableCell>
-              <TableCell align="right">Saldo conciliado</TableCell>
-              <TableCell align="right">Não conciliados</TableCell>
-              <TableCell>Situação</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {contas.dados.map((c) => (
-              <TableRow key={c.contaId} hover>
-                <TableCell>
-                  {c.contaNome}
-                  <Typography
-                    variant="caption"
-                    component="span"
-                    color="text.secondary"
-                    sx={{ display: 'block' }}
-                  >
-                    {[
-                      c.banco,
-                      c.agencia && `Ag. ${c.agencia}`,
-                      c.numeroConta && `Conta ${c.numeroConta}`,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  {c.conciliadaAte ? formatarData(c.conciliadaAte) : '—'}
-                </TableCell>
-                <TableCell align="right">
-                  {c.saldoConciliado === null ? (
-                    '—'
-                  ) : (
-                    <Valor valor={c.saldoConciliado} />
-                  )}
-                </TableCell>
-                <TableCell align="right">{c.naoConciliados}</TableCell>
-                <TableCell>
-                  <Situacao conta={c} />
-                </TableCell>
-                <TableCell>
-                  <LinhaAcoes>
-                    {c.sessaoId !== null ? (
-                      <Button
-                        size="small"
-                        variant={tesouraria ? 'contained' : 'text'}
-                        onClick={() => navegar(`/conciliacao/${c.sessaoId}`)}
-                        aria-label={`${tesouraria ? 'Continuar' : 'Ver'} a conciliação de ${c.contaNome}`}
-                      >
-                        {tesouraria ? 'Continuar' : 'Ver sessão'}
-                      </Button>
+        <TableContainer>
+          <Table aria-label="Contas bancárias">
+            <TableHead>
+              <TableRow>
+                <TableCell>Conta</TableCell>
+                <TableCell>Conciliada até</TableCell>
+                <TableCell align="right">Saldo conciliado</TableCell>
+                <TableCell align="right">Não conciliados</TableCell>
+                <TableCell>Situação</TableCell>
+                <TableCell>Ações</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {contas.dados.map((c) => (
+                <TableRow key={c.contaId} hover>
+                  <TableCell>
+                    {c.contaNome}
+                    <Typography
+                      variant="caption"
+                      component="span"
+                      color="text.secondary"
+                      sx={{ display: 'block' }}
+                    >
+                      {[
+                        c.banco,
+                        c.agencia && `Ag. ${c.agencia}`,
+                        c.numeroConta && `Conta ${c.numeroConta}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {c.conciliadaAte ? formatarData(c.conciliadaAte) : '—'}
+                  </TableCell>
+                  <TableCell align="right">
+                    {c.saldoConciliado === null ? (
+                      '—'
                     ) : (
-                      tesouraria && (
+                      <Valor valor={c.saldoConciliado} />
+                    )}
+                  </TableCell>
+                  <TableCell align="right">{c.naoConciliados}</TableCell>
+                  <TableCell>
+                    <Situacao conta={c} />
+                  </TableCell>
+                  <TableCell>
+                    <LinhaAcoes>
+                      {c.sessaoId !== null ? (
                         <Button
                           size="small"
-                          variant="contained"
-                          onClick={() => setIniciando(c)}
-                          aria-label={`Conciliar ${c.contaNome}`}
+                          variant={tesouraria ? 'contained' : 'text'}
+                          onClick={() => navegar(`/conciliacao/${c.sessaoId}`)}
+                          aria-label={`${tesouraria ? 'Continuar' : 'Ver'} a conciliação de ${c.contaNome}`}
                         >
-                          Conciliar
+                          {tesouraria ? 'Continuar' : 'Ver sessão'}
                         </Button>
-                      )
-                    )}
-                    <LinkRota
-                      to={`/conciliacao/historico?contaId=${c.contaId}`}
-                    >
-                      Histórico
-                    </LinkRota>
-                  </LinhaAcoes>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                      ) : (
+                        tesouraria && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => setIniciando(c)}
+                            aria-label={`Conciliar ${c.contaNome}`}
+                          >
+                            Conciliar
+                          </Button>
+                        )
+                      )}
+                      <LinkRota
+                        to={`/conciliacao/historico?contaId=${c.contaId}`}
+                      >
+                        Histórico
+                      </LinkRota>
+                    </LinhaAcoes>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {iniciando && (
         <ExtratoDialogo
