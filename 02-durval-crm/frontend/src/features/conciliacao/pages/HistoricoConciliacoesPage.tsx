@@ -3,6 +3,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -70,40 +71,42 @@ export function HistoricoConciliacoesPage() {
         <TextoSuave>Nenhuma conciliação concluída.</TextoSuave>
       )}
       {historico.dados && historico.dados.length > 0 && (
-        <Table aria-label="Conciliações concluídas">
-          <TableHead>
-            <TableRow>
-              <TableCell>Conta</TableCell>
-              <TableCell>Extrato até</TableCell>
-              <TableCell align="right">Saldo do extrato</TableCell>
-              <TableCell align="right">Conciliados</TableCell>
-              <TableCell align="right">Pendentes</TableCell>
-              <TableCell>Concluída por</TableCell>
-              <TableCell>Concluída em</TableCell>
-              <TableCell>Relatório</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {historico.dados.map((h) => (
-              <TableRow key={h.id} hover>
-                <TableCell>{h.contaNome}</TableCell>
-                <TableCell>{formatarData(h.dataFim)}</TableCell>
-                <TableCell align="right">
-                  <Valor valor={h.saldoExtrato} />
-                </TableCell>
-                <TableCell align="right">{h.conciliados}</TableCell>
-                <TableCell align="right">{h.pendentes}</TableCell>
-                <TableCell>{h.concluidaPor}</TableCell>
-                <TableCell>{formatarDataHora(h.concluidaEm)}</TableCell>
-                <TableCell>
-                  <LinkRota to={`/conciliacao/${h.id}`}>
-                    Ver relatório nº {h.id}
-                  </LinkRota>
-                </TableCell>
+        <TableContainer>
+          <Table aria-label="Conciliações concluídas">
+            <TableHead>
+              <TableRow>
+                <TableCell>Conta</TableCell>
+                <TableCell>Extrato até</TableCell>
+                <TableCell align="right">Saldo do extrato</TableCell>
+                <TableCell align="right">Conciliados</TableCell>
+                <TableCell align="right">Pendentes</TableCell>
+                <TableCell>Concluída por</TableCell>
+                <TableCell>Concluída em</TableCell>
+                <TableCell>Relatório</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {historico.dados.map((h) => (
+                <TableRow key={h.id} hover>
+                  <TableCell>{h.contaNome}</TableCell>
+                  <TableCell>{formatarData(h.dataFim)}</TableCell>
+                  <TableCell align="right">
+                    <Valor valor={h.saldoExtrato} />
+                  </TableCell>
+                  <TableCell align="right">{h.conciliados}</TableCell>
+                  <TableCell align="right">{h.pendentes}</TableCell>
+                  <TableCell>{h.concluidaPor}</TableCell>
+                  <TableCell>{formatarDataHora(h.concluidaEm)}</TableCell>
+                  <TableCell>
+                    <LinkRota to={`/conciliacao/${h.id}`}>
+                      Ver relatório nº {h.id}
+                    </LinkRota>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </Pilha>
   )

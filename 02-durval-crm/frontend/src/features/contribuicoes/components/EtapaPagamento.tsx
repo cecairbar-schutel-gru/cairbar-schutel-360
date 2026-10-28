@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableRow,
   TextField,
   Typography,
@@ -156,24 +157,26 @@ function FormularioPagamento({
         <Typography id="titulo-resumo" variant="h6" component="h2">
           Resumo
         </Typography>
-        <Table size="small" aria-labelledby="titulo-resumo">
-          <TableBody>
-            {!anonima && !somenteDoacao && (
+        <TableContainer>
+          <Table size="small" aria-labelledby="titulo-resumo">
+            <TableBody>
+              {!anonima && !somenteDoacao && (
+                <TableRow>
+                  <TableCell>Competências selecionadas</TableCell>
+                  <TableCell align="right">{formatarMoeda(paraReais(devido))}</TableCell>
+                </TableRow>
+              )}
               <TableRow>
-                <TableCell>Competências selecionadas</TableCell>
-                <TableCell align="right">{formatarMoeda(paraReais(devido))}</TableCell>
+                <TableCell>Total recebido</TableCell>
+                <TableCell align="right">{formatarMoeda(paraReais(resumo.recebido))}</TableCell>
               </TableRow>
-            )}
-            <TableRow>
-              <TableCell>Total recebido</TableCell>
-              <TableCell align="right">{formatarMoeda(paraReais(resumo.recebido))}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Diferença</TableCell>
-              <TableCell align="right">{formatarMoeda(paraReais(resumo.diferenca))}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+              <TableRow>
+                <TableCell>Diferença</TableCell>
+                <TableCell align="right">{formatarMoeda(paraReais(resumo.diferenca))}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
 
       <div aria-live="polite">
@@ -223,39 +226,41 @@ function FormularioPagamento({
         onFechar={() => setRevisando(false)}
         onConfirmar={() => void confirmar()}
       >
-        <Table size="small" aria-label="Revisão da contribuição">
-          <TableBody>
-            {competencias.map((c) => (
-              <TableRow key={c.mes}>
-                <TableCell>Competência {formatarCompetencia(c.mes)}</TableCell>
-                <TableCell align="right">{formatarMoeda(c.valor)}</TableCell>
-              </TableRow>
-            ))}
-            {doacao > 0 && (
+        <TableContainer>
+          <Table size="small" aria-label="Revisão da contribuição">
+            <TableBody>
+              {competencias.map((c) => (
+                <TableRow key={c.mes}>
+                  <TableCell>Competência {formatarCompetencia(c.mes)}</TableCell>
+                  <TableCell align="right">{formatarMoeda(c.valor)}</TableCell>
+                </TableRow>
+              ))}
+              {doacao > 0 && (
+                <TableRow>
+                  <TableCell>{anonima ? 'Doação anônima' : 'Doação extraordinária'}</TableCell>
+                  <TableCell align="right">{formatarMoeda(paraReais(doacao))}</TableCell>
+                </TableRow>
+              )}
+              {resumo.pagamentos.map((p, i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    {rotuloPagamento(p)} —{' '}
+                    {contaDoMeio(opcoes, p.meio)}
+                  </TableCell>
+                  <TableCell align="right">{formatarMoeda(p.valor)}</TableCell>
+                </TableRow>
+              ))}
               <TableRow>
-                <TableCell>{anonima ? 'Doação anônima' : 'Doação extraordinária'}</TableCell>
-                <TableCell align="right">{formatarMoeda(paraReais(doacao))}</TableCell>
-              </TableRow>
-            )}
-            {resumo.pagamentos.map((p, i) => (
-              <TableRow key={i}>
                 <TableCell>
-                  {rotuloPagamento(p)} —{' '}
-                  {contaDoMeio(opcoes, p.meio)}
+                  <strong>Total</strong>
                 </TableCell>
-                <TableCell align="right">{formatarMoeda(p.valor)}</TableCell>
+                <TableCell align="right">
+                  <strong>{formatarMoeda(paraReais(resumo.recebido))}</strong>
+                </TableCell>
               </TableRow>
-            ))}
-            <TableRow>
-              <TableCell>
-                <strong>Total</strong>
-              </TableCell>
-              <TableCell align="right">
-                <strong>{formatarMoeda(paraReais(resumo.recebido))}</strong>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </TableContainer>
       </DialogoAcao>
     </Pilha>
   )

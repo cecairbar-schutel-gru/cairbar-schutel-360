@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Chip, LinearProgress, MenuItem, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import { Box, Card, CardContent, Chip, LinearProgress, MenuItem, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, Typography } from '@mui/material'
 import { alpha, styled } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -22,7 +22,7 @@ import type { DemonstrativoMensal, GrupoComparado, LinhaComparada, Variacao } fr
 
 const Colunas = styled('div')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(30rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(30rem, 100%), 1fr))',
   gap: theme.spacing(3),
   alignItems: 'start',
 }))
@@ -126,14 +126,16 @@ function Conteudo({ d }: { d: DemonstrativoMensal }) {
           <Typography variant="h6" component="h2" gutterBottom>
             Resultado financeiro
           </Typography>
-          <Table size="small" aria-label="Resultado financeiro">
-            <CabecalhoComparacao primeira="" mesAnterior={d.mesAnterior} />
-            <TableBody>
-              <LinhaValores rotulo="Receitas" v={d.totalReceitas} />
-              <LinhaValores rotulo="Despesas" v={d.totalDespesas} />
-              <LinhaValores rotulo="Resultado (receitas − despesas)" v={d.resultado} negrito />
-            </TableBody>
-          </Table>
+          <TableContainer>
+            <Table size="small" aria-label="Resultado financeiro">
+              <CabecalhoComparacao primeira="" mesAnterior={d.mesAnterior} />
+              <TableBody>
+                <LinhaValores rotulo="Receitas" v={d.totalReceitas} />
+                <LinhaValores rotulo="Despesas" v={d.totalDespesas} />
+                <LinhaValores rotulo="Resultado (receitas − despesas)" v={d.resultado} negrito />
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TextoSuave>Transferências entre contas próprias e obrigações com editoras não entram no resultado.</TextoSuave>
         </CardContent>
       </Card>
@@ -144,48 +146,50 @@ function Conteudo({ d }: { d: DemonstrativoMensal }) {
             Saldos por conta
           </Typography>
           <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" aria-label="Saldos por conta">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Conta</TableCell>
-                  <TableCell align="right">Saldo inicial</TableCell>
-                  <TableCell align="right">Entradas</TableCell>
-                  <TableCell align="right">Saídas</TableCell>
-                  <TableCell align="right">Transferências recebidas</TableCell>
-                  <TableCell align="right">Transferências enviadas</TableCell>
-                  <TableCell align="right">Saldo final</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {d.contas.map((c) => (
-                  <TableRow key={c.contaId}>
-                    <TableCell>
-                      {c.nome}
-                      <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
-                        {ROTULO_TIPO[c.tipo]}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right"><Valor valor={c.saldoInicial} /></TableCell>
-                    <TableCell align="right"><Valor valor={c.entradas} /></TableCell>
-                    <TableCell align="right"><Valor valor={c.saidas} /></TableCell>
-                    <TableCell align="right"><Valor valor={c.transferenciasEntrada} /></TableCell>
-                    <TableCell align="right"><Valor valor={c.transferenciasSaida} /></TableCell>
-                    <TableCell align="right"><Valor valor={c.saldoFinal} negrito /></TableCell>
+            <TableContainer>
+              <Table size="small" aria-label="Saldos por conta">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Conta</TableCell>
+                    <TableCell align="right">Saldo inicial</TableCell>
+                    <TableCell align="right">Entradas</TableCell>
+                    <TableCell align="right">Saídas</TableCell>
+                    <TableCell align="right">Transferências recebidas</TableCell>
+                    <TableCell align="right">Transferências enviadas</TableCell>
+                    <TableCell align="right">Saldo final</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell>Total</TableCell>
-                  <TableCell align="right"><Valor valor={totais.saldoInicial} negrito /></TableCell>
-                  <TableCell align="right"><Valor valor={totais.entradas} negrito /></TableCell>
-                  <TableCell align="right"><Valor valor={totais.saidas} negrito /></TableCell>
-                  <TableCell align="right"><Valor valor={totais.transferenciasEntrada} negrito /></TableCell>
-                  <TableCell align="right"><Valor valor={totais.transferenciasSaida} negrito /></TableCell>
-                  <TableCell align="right"><Valor valor={totais.saldoFinal} negrito /></TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {d.contas.map((c) => (
+                    <TableRow key={c.contaId}>
+                      <TableCell>
+                        {c.nome}
+                        <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
+                          {ROTULO_TIPO[c.tipo]}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right"><Valor valor={c.saldoInicial} /></TableCell>
+                      <TableCell align="right"><Valor valor={c.entradas} /></TableCell>
+                      <TableCell align="right"><Valor valor={c.saidas} /></TableCell>
+                      <TableCell align="right"><Valor valor={c.transferenciasEntrada} /></TableCell>
+                      <TableCell align="right"><Valor valor={c.transferenciasSaida} /></TableCell>
+                      <TableCell align="right"><Valor valor={c.saldoFinal} negrito /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell>Total</TableCell>
+                    <TableCell align="right"><Valor valor={totais.saldoInicial} negrito /></TableCell>
+                    <TableCell align="right"><Valor valor={totais.entradas} negrito /></TableCell>
+                    <TableCell align="right"><Valor valor={totais.saidas} negrito /></TableCell>
+                    <TableCell align="right"><Valor valor={totais.transferenciasEntrada} negrito /></TableCell>
+                    <TableCell align="right"><Valor valor={totais.transferenciasSaida} negrito /></TableCell>
+                    <TableCell align="right"><Valor valor={totais.saldoFinal} negrito /></TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            </TableContainer>
           </Box>
           <TextoSuave>Liquidações de cartão aparecem como transferência de Cartão a receber para o banco; a taxa está nas despesas.</TextoSuave>
         </CardContent>
@@ -201,30 +205,32 @@ function Conteudo({ d }: { d: DemonstrativoMensal }) {
             {d.editoras.length === 0 ? (
               <TextoSuave>Nenhuma editora com saldo devido.</TextoSuave>
             ) : (
-              <Table size="small" aria-label="Obrigações com editoras">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Editora</TableCell>
-                    <TableCell>Situação</TableCell>
-                    <TableCell align="right">Saldo devido</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {d.editoras.map((e) => (
-                    <TableRow key={e.editoraId}>
-                      <TableCell>{e.nome}</TableCell>
-                      <TableCell>{e.transferido ? 'Transferido ao mês seguinte' : 'Em aberto'}</TableCell>
-                      <TableCell align="right"><Valor valor={e.saldo} /></TableCell>
+              <TableContainer>
+                <Table size="small" aria-label="Obrigações com editoras">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Editora</TableCell>
+                      <TableCell>Situação</TableCell>
+                      <TableCell align="right">Saldo devido</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell colSpan={2}>Total</TableCell>
-                    <TableCell align="right"><Valor valor={d.totalEditoras} negrito /></TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {d.editoras.map((e) => (
+                      <TableRow key={e.editoraId}>
+                        <TableCell>{e.nome}</TableCell>
+                        <TableCell>{e.transferido ? 'Transferido ao mês seguinte' : 'Em aberto'}</TableCell>
+                        <TableCell align="right"><Valor valor={e.saldo} /></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={2}>Total</TableCell>
+                      <TableCell align="right"><Valor valor={d.totalEditoras} negrito /></TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </TableContainer>
             )}
           </CardContent>
         </Card>
@@ -233,32 +239,34 @@ function Conteudo({ d }: { d: DemonstrativoMensal }) {
             <Typography variant="h6" component="h2" gutterBottom>
               Mensalidades
             </Typography>
-            <Table size="small" aria-label="Mensalidades">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Competências de {nomeDoMes(d.mes)}</TableCell>
-                  <TableCell align="right">Quantidade</TableCell>
-                  <TableCell align="right">Valor</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Geradas</TableCell>
-                  <TableCell align="right">{d.mensalidades.geradas}</TableCell>
-                  <TableCell align="right"><Valor valor={d.mensalidades.valorGerado} /></TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Pagas</TableCell>
-                  <TableCell align="right">{d.mensalidades.pagas}</TableCell>
-                  <TableCell align="right"><Valor valor={d.mensalidades.valorPago} /></TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Pendentes</TableCell>
-                  <TableCell align="right">{d.mensalidades.pendentes}</TableCell>
-                  <TableCell align="right"><Valor valor={d.mensalidades.valorPendente} /></TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+            <TableContainer>
+              <Table size="small" aria-label="Mensalidades">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Competências de {nomeDoMes(d.mes)}</TableCell>
+                    <TableCell align="right">Quantidade</TableCell>
+                    <TableCell align="right">Valor</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Geradas</TableCell>
+                    <TableCell align="right">{d.mensalidades.geradas}</TableCell>
+                    <TableCell align="right"><Valor valor={d.mensalidades.valorGerado} /></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Pagas</TableCell>
+                    <TableCell align="right">{d.mensalidades.pagas}</TableCell>
+                    <TableCell align="right"><Valor valor={d.mensalidades.valorPago} /></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Pendentes</TableCell>
+                    <TableCell align="right">{d.mensalidades.pendentes}</TableCell>
+                    <TableCell align="right"><Valor valor={d.mensalidades.valorPendente} /></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
             <Typography sx={{ mt: 1 }}>
               Recebido no mês em mensalidades (de qualquer competência): <strong>{formatarMoeda(d.recebidoMensalidades)}</strong>
             </Typography>
@@ -327,17 +335,19 @@ function TabelaCategorias({
           <TextoSuave>Nada no mês nem no anterior.</TextoSuave>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" aria-label={titulo}>
-              <CabecalhoComparacao primeira="Categoria" mesAnterior={mesAnterior} />
-              <TableBody>
-                {grupos.map((g) => (
-                  <Grupo key={g.codigo} grupo={g} total={total.atual} />
-                ))}
-              </TableBody>
-              <TableFooter>
-                <LinhaValores rotulo="Total" v={total} negrito />
-              </TableFooter>
-            </Table>
+            <TableContainer>
+              <Table size="small" aria-label={titulo}>
+                <CabecalhoComparacao primeira="Categoria" mesAnterior={mesAnterior} />
+                <TableBody>
+                  {grupos.map((g) => (
+                    <Grupo key={g.codigo} grupo={g} total={total.atual} />
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <LinhaValores rotulo="Total" v={total} negrito />
+                </TableFooter>
+              </Table>
+            </TableContainer>
           </Box>
         )}
       </CardContent>

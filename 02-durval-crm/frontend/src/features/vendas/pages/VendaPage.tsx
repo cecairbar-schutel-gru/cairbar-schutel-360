@@ -7,6 +7,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -142,30 +143,32 @@ export function VendaPage() {
           {consignados.length === 0 ? (
             <TextoSuave>Nenhum livro consignado nesta venda.</TextoSuave>
           ) : (
-            <Table size="small" aria-label="Remessas usadas e obrigações criadas">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Título</TableCell>
-                  <TableCell>Remessa</TableCell>
-                  <TableCell align="right">Qtd</TableCell>
-                  <TableCell align="right">Repasse</TableCell>
-                  <TableCell align="right">Obrigação</TableCell>
-                  <TableCell>Situação</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {consignados.map((l) => (
-                  <TableRow key={`${l.produtoNome}-${l.remessaId}`}>
-                    <TableCell>{l.produtoNome}</TableCell>
-                    <TableCell>{l.remessaCodigo}</TableCell>
-                    <TableCell align="right">{l.quantidade}</TableCell>
-                    <TableCell align="right">{l.repassePercentual}%</TableCell>
-                    <TableCell align="right">{formatarMoeda(l.valorObrigacao ?? 0)}</TableCell>
-                    <TableCell>{venda.status === 'CANCELADA' ? 'Estornada' : 'Em aberto'}</TableCell>
+            <TableContainer>
+              <Table size="small" aria-label="Remessas usadas e obrigações criadas">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Título</TableCell>
+                    <TableCell>Remessa</TableCell>
+                    <TableCell align="right">Qtd</TableCell>
+                    <TableCell align="right">Repasse</TableCell>
+                    <TableCell align="right">Obrigação</TableCell>
+                    <TableCell>Situação</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {consignados.map((l) => (
+                    <TableRow key={`${l.produtoNome}-${l.remessaId}`}>
+                      <TableCell>{l.produtoNome}</TableCell>
+                      <TableCell>{l.remessaCodigo}</TableCell>
+                      <TableCell align="right">{l.quantidade}</TableCell>
+                      <TableCell align="right">{l.repassePercentual}%</TableCell>
+                      <TableCell align="right">{formatarMoeda(l.valorObrigacao ?? 0)}</TableCell>
+                      <TableCell>{venda.status === 'CANCELADA' ? 'Estornada' : 'Em aberto'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
           <LinhaAcoes>
             {!nova && vendedor && (

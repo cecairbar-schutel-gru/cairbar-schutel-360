@@ -22,7 +22,7 @@ export function BotoesCantina({ onAdicionar }: { onAdicionar(produto: ProdutoVen
           <Typography variant="subtitle2" component="h3" color="text.secondary" sx={{ mb: 1 }}>
             {categoria}
           </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(9rem, 1fr))', gap: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(9rem, 100%), 1fr))', gap: 1 }}>
             {dados
               .filter((p) => (p.categoria ?? 'Outros') === categoria)
               .map((p) => (

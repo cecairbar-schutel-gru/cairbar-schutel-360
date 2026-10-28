@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useTelaCheia } from '../hooks/useTelaCheia'
 
 interface Props {
   aberto: boolean
@@ -50,6 +51,7 @@ export function DialogoAcao({
   children,
 }: Props) {
   const idTitulo = useId()
+  const telaCheia = useTelaCheia()
   const conteudo = useRef<HTMLDivElement>(null)
   const [tentativas, setTentativas] = useState(0)
 
@@ -66,6 +68,7 @@ export function DialogoAcao({
       open={aberto}
       onClose={onFechar}
       aria-labelledby={idTitulo}
+      fullScreen={telaCheia}
       fullWidth
       maxWidth="sm"
     >

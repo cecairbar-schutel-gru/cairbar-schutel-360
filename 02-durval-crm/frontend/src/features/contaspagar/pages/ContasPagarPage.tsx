@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -96,64 +97,66 @@ export function ContasPagarPage() {
       )}
       {lista.length > 0 && (
         <>
-          <Table size="small" aria-label="Vencimentos">
-            <TableHead>
-              <TableRow>
-                <TableCell>Vencimento</TableCell>
-                <TableCell sx={{ minWidth: '10rem' }}>Conta</TableCell>
-                <TableCell>Categoria</TableCell>
-                <TableCell align="right">Valor</TableCell>
-                <TableCell>Situação</TableCell>
-                <TableCell>Pagamento</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {lista.map((p) => (
-                <TableRow key={`${p.contaPagarId}-${p.vencimento}`} hover>
-                  <TableCell>{formatarData(p.vencimento)}</TableCell>
-                  <TableCell>
-                    <LinkRota to={`/contas-pagar/${p.contaPagarId}`}>{p.descricao}</LinkRota>
-                    {p.favorecido && (
-                      <Typography variant="body2" color="text.secondary">
-                        {p.favorecido}
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>{p.categoriaNome ?? p.categoria}</TableCell>
-                  <TableCell align="right">
-                    {formatarMoeda(p.pagamento?.valor ?? p.valorPrevisto)}
-                    {!p.pagamento && (
-                      <Typography variant="caption" component="p" color="text.secondary">
-                        previsto
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <SituacaoParcelaTag situacao={p.situacao} />
-                  </TableCell>
-                  <TableCell>
-                    {p.pagamento ? (
-                      <>
-                        {formatarData(p.pagamento.pagoEm)} · {p.pagamento.contaNome}
-                        {p.pagamento.lancamentoId && (
-                          <Typography variant="body2">
-                            <LinkRota to={`/financeiro/lancamentos/${p.pagamento.lancamentoId}`}>
-                              Lançamento nº {p.pagamento.lancamentoId}
-                            </LinkRota>
-                          </Typography>
-                        )}
-                      </>
-                    ) : (
-                      <Button size="small" variant="outlined" aria-label={`Pagar ${p.descricao} de ${formatarData(p.vencimento)}`}
-                        onClick={() => setPagando(p)}>
-                        Pagar
-                      </Button>
-                    )}
-                  </TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Vencimentos">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Vencimento</TableCell>
+                  <TableCell sx={{ minWidth: '10rem' }}>Conta</TableCell>
+                  <TableCell>Categoria</TableCell>
+                  <TableCell align="right">Valor</TableCell>
+                  <TableCell>Situação</TableCell>
+                  <TableCell>Pagamento</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {lista.map((p) => (
+                  <TableRow key={`${p.contaPagarId}-${p.vencimento}`} hover>
+                    <TableCell>{formatarData(p.vencimento)}</TableCell>
+                    <TableCell>
+                      <LinkRota to={`/contas-pagar/${p.contaPagarId}`}>{p.descricao}</LinkRota>
+                      {p.favorecido && (
+                        <Typography variant="body2" color="text.secondary">
+                          {p.favorecido}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>{p.categoriaNome ?? p.categoria}</TableCell>
+                    <TableCell align="right">
+                      {formatarMoeda(p.pagamento?.valor ?? p.valorPrevisto)}
+                      {!p.pagamento && (
+                        <Typography variant="caption" component="p" color="text.secondary">
+                          previsto
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <SituacaoParcelaTag situacao={p.situacao} />
+                    </TableCell>
+                    <TableCell>
+                      {p.pagamento ? (
+                        <>
+                          {formatarData(p.pagamento.pagoEm)} · {p.pagamento.contaNome}
+                          {p.pagamento.lancamentoId && (
+                            <Typography variant="body2">
+                              <LinkRota to={`/financeiro/lancamentos/${p.pagamento.lancamentoId}`}>
+                                Lançamento nº {p.pagamento.lancamentoId}
+                              </LinkRota>
+                            </Typography>
+                          )}
+                        </>
+                      ) : (
+                        <Button size="small" variant="outlined" aria-label={`Pagar ${p.descricao} de ${formatarData(p.vencimento)}`}
+                          onClick={() => setPagando(p)}>
+                          Pagar
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TextoSuave>
             Em aberto: {formatarMoeda(totalAberto)} previstos · Pago: {formatarMoeda(totalPago)}
           </TextoSuave>

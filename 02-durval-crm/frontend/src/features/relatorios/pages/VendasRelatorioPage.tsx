@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
+import { Box, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
 import { Indicador } from '../../../shared/components/Indicador'
@@ -72,24 +72,26 @@ function Conteudo({ v }: { v: RelatorioVendas }) {
             <Typography variant="h6" component="h2" gutterBottom>
               Por forma de pagamento
             </Typography>
-            <Table size="small" aria-label="Por forma de pagamento">
-              <TableBody>
-                {v.porMeio.map((m) => (
-                  <TableRow key={m.meio}>
-                    <TableCell>{ROTULO_MEIO_RELATORIO[m.meio]}</TableCell>
-                    <TableCell sx={{ width: '45%' }}><BarraPercentual percentual={percentualDe(m.valor, totalMeios)} /></TableCell>
-                    <TableCell align="right"><Dinheiro valor={m.valor} /></TableCell>
+            <TableContainer>
+              <Table size="small" aria-label="Por forma de pagamento">
+                <TableBody>
+                  {v.porMeio.map((m) => (
+                    <TableRow key={m.meio}>
+                      <TableCell>{ROTULO_MEIO_RELATORIO[m.meio]}</TableCell>
+                      <TableCell sx={{ width: '45%' }}><BarraPercentual percentual={percentualDe(m.valor, totalMeios)} /></TableCell>
+                      <TableCell align="right"><Dinheiro valor={m.valor} /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
+                    <TableCell />
+                    <TableCell align="right"><Dinheiro valor={totalMeios} negrito /></TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
-                  <TableCell />
-                  <TableCell align="right"><Dinheiro valor={totalMeios} negrito /></TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
+                </TableFooter>
+              </Table>
+            </TableContainer>
           </CardContent>
         </Card>
         <Card variant="outlined">
@@ -101,26 +103,28 @@ function Conteudo({ v }: { v: RelatorioVendas }) {
               <TextoSuave>Nenhuma venda no período.</TextoSuave>
             ) : (
               <Box sx={{ overflowX: 'auto' }}>
-                <Table size="small" aria-label="Por vendedor">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Vendedor</TableCell>
-                      <TableCell align="right">Vendas</TableCell>
-                      <TableCell align="right">Canceladas</TableCell>
-                      <TableCell align="right">Líquido</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {v.porVendedor.map((c) => (
-                      <TableRow key={c.vendedorSubject}>
-                        <TableCell>{c.nome}</TableCell>
-                        <TableCell align="right">{c.vendas}</TableCell>
-                        <TableCell align="right">{c.canceladas}</TableCell>
-                        <TableCell align="right"><Dinheiro valor={c.liquido} /></TableCell>
+                <TableContainer>
+                  <Table size="small" aria-label="Por vendedor">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Vendedor</TableCell>
+                        <TableCell align="right">Vendas</TableCell>
+                        <TableCell align="right">Canceladas</TableCell>
+                        <TableCell align="right">Líquido</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHead>
+                    <TableBody>
+                      {v.porVendedor.map((c) => (
+                        <TableRow key={c.vendedorSubject}>
+                          <TableCell>{c.nome}</TableCell>
+                          <TableCell align="right">{c.vendas}</TableCell>
+                          <TableCell align="right">{c.canceladas}</TableCell>
+                          <TableCell align="right"><Dinheiro valor={c.liquido} /></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </Box>
             )}
           </CardContent>
@@ -135,30 +139,32 @@ function Conteudo({ v }: { v: RelatorioVendas }) {
             <TextoSuave>Nenhum produto vendido no período.</TextoSuave>
           ) : (
             <Box sx={{ overflowX: 'auto' }}>
-              <Table size="small" aria-label="Por produto">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Produto</TableCell>
-                    <TableCell>Tipo</TableCell>
-                    <TableCell align="right">Quantidade</TableCell>
-                    <TableCell sx={{ width: '30%' }}>Participação</TableCell>
-                    <TableCell align="right">Receita</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {v.porProduto.map((p) => (
-                    <TableRow key={p.produtoId}>
-                      <TableCell>
-                        <LinkRota to={linkMovimentos(p.produtoId, periodo)}>{p.nome}</LinkRota>
-                      </TableCell>
-                      <TableCell>{p.tipo === 'LIVRO' ? 'Livro' : 'Cantina'}</TableCell>
-                      <TableCell align="right">{p.quantidade}</TableCell>
-                      <TableCell><BarraPercentual percentual={percentualDe(p.valor, v.receitaLiquida)} /></TableCell>
-                      <TableCell align="right"><Dinheiro valor={p.valor} /></TableCell>
+              <TableContainer>
+                <Table size="small" aria-label="Por produto">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Produto</TableCell>
+                      <TableCell>Tipo</TableCell>
+                      <TableCell align="right">Quantidade</TableCell>
+                      <TableCell sx={{ width: '30%' }}>Participação</TableCell>
+                      <TableCell align="right">Receita</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {v.porProduto.map((p) => (
+                      <TableRow key={p.produtoId}>
+                        <TableCell>
+                          <LinkRota to={linkMovimentos(p.produtoId, periodo)}>{p.nome}</LinkRota>
+                        </TableCell>
+                        <TableCell>{p.tipo === 'LIVRO' ? 'Livro' : 'Cantina'}</TableCell>
+                        <TableCell align="right">{p.quantidade}</TableCell>
+                        <TableCell><BarraPercentual percentual={percentualDe(p.valor, v.receitaLiquida)} /></TableCell>
+                        <TableCell align="right"><Dinheiro valor={p.valor} /></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>
           )}
           <TextoSuave>Preço de cada venda como foi registrado; vendas anteriores nunca são recalculadas.</TextoSuave>

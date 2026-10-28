@@ -1,4 +1,4 @@
-import { Alert, Button, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
+import { Alert, Button, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthProvider'
@@ -98,45 +98,47 @@ export function PedidoLivrosPage() {
         </Alert>
       )}
 
-      <Table size="small" aria-label="Títulos do pedido">
-        <TableHead>
-          <TableRow>
-            <TableCell>Título</TableCell>
-            <TableCell align="right">Pedidas</TableCell>
-            {recebido && <TableCell align="right">Recebidas</TableCell>}
-            {recebido && <TableCell align="right">Diferença</TableCell>}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {p.itens.map((i) => (
-            <TableRow key={i.produtoId}>
-              <TableCell>
-                <LinkRota to={`/estoque/produtos/${i.produtoId}`}>{i.titulo}</LinkRota>
-                {i.autor && (
-                  <Typography variant="body2" color="text.secondary">
-                    {i.autor}
-                  </Typography>
-                )}
-              </TableCell>
-              <TableCell align="right">{i.pedida}</TableCell>
-              {recebido && <TableCell align="right">{i.recebida}</TableCell>}
-              {recebido && (
-                <TableCell align="right" sx={{ color: i.recebida !== i.pedida ? 'warning.main' : undefined }}>
-                  {(i.recebida ?? 0) - i.pedida}
-                </TableCell>
-              )}
+      <TableContainer>
+        <Table size="small" aria-label="Títulos do pedido">
+          <TableHead>
+            <TableRow>
+              <TableCell>Título</TableCell>
+              <TableCell align="right">Pedidas</TableCell>
+              {recebido && <TableCell align="right">Recebidas</TableCell>}
+              {recebido && <TableCell align="right">Diferença</TableCell>}
             </TableRow>
-          ))}
-        </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell>Total</TableCell>
-            <TableCell align="right">{somar(p.itens.map((i) => i.pedida))}</TableCell>
-            {recebido && <TableCell align="right">{somar(p.itens.map((i) => i.recebida ?? 0))}</TableCell>}
-            {recebido && <TableCell align="right">{somar(p.itens.map((i) => (i.recebida ?? 0) - i.pedida))}</TableCell>}
-          </TableRow>
-        </TableFooter>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {p.itens.map((i) => (
+              <TableRow key={i.produtoId}>
+                <TableCell>
+                  <LinkRota to={`/estoque/produtos/${i.produtoId}`}>{i.titulo}</LinkRota>
+                  {i.autor && (
+                    <Typography variant="body2" color="text.secondary">
+                      {i.autor}
+                    </Typography>
+                  )}
+                </TableCell>
+                <TableCell align="right">{i.pedida}</TableCell>
+                {recebido && <TableCell align="right">{i.recebida}</TableCell>}
+                {recebido && (
+                  <TableCell align="right" sx={{ color: i.recebida !== i.pedida ? 'warning.main' : undefined }}>
+                    {(i.recebida ?? 0) - i.pedida}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell>Total</TableCell>
+              <TableCell align="right">{somar(p.itens.map((i) => i.pedida))}</TableCell>
+              {recebido && <TableCell align="right">{somar(p.itens.map((i) => i.recebida ?? 0))}</TableCell>}
+              {recebido && <TableCell align="right">{somar(p.itens.map((i) => (i.recebida ?? 0) - i.pedida))}</TableCell>}
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </TableContainer>
 
       <DialogoTexto
         aberto={cancelando}

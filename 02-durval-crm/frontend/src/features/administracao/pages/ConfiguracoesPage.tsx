@@ -16,7 +16,7 @@ import { Pilha, TextoSuave, TituloPagina } from '../../../shared/components/layo
 
 const Grade = styled('div')(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(18rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(min(18rem, 100%), 1fr))',
   gap: theme.spacing(2),
 }))
 

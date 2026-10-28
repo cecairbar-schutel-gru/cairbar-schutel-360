@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
+import { Box, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, Typography } from '@mui/material'
 import { useAuth } from '../../../auth/AuthProvider'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
@@ -82,28 +82,30 @@ function Conteudo({ m }: { m: RelatorioMensalidades }) {
             Competências de {formatarCompetencia(m.competenciaDe)} a {formatarCompetencia(m.competenciaAte)}
           </Typography>
           <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" aria-label="Competências por mês">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Competência</TableCell>
-                  <TableCell align="right">Geradas</TableCell>
-                  <TableCell align="right">Pagas</TableCell>
-                  <TableCell align="right">Pendentes</TableCell>
-                  <TableCell align="right">Canceladas</TableCell>
-                  <TableCell align="right">Valor pago</TableCell>
-                  <TableCell align="right">Valor pendente</TableCell>
-                  <TableCell sx={{ minWidth: 160 }}>Taxa de pagamento</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {m.porCompetencia.map((s) => (
-                  <LinhaCompetencia key={s.mes} s={s} rotulo={nomeDoMes(s.mes!)} />
-                ))}
-              </TableBody>
-              <TableFooter>
-                <LinhaCompetencia s={m.totalCompetencias} rotulo="Total" negrito />
-              </TableFooter>
-            </Table>
+            <TableContainer>
+              <Table size="small" aria-label="Competências por mês">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Competência</TableCell>
+                    <TableCell align="right">Geradas</TableCell>
+                    <TableCell align="right">Pagas</TableCell>
+                    <TableCell align="right">Pendentes</TableCell>
+                    <TableCell align="right">Canceladas</TableCell>
+                    <TableCell align="right">Valor pago</TableCell>
+                    <TableCell align="right">Valor pendente</TableCell>
+                    <TableCell sx={{ minWidth: 160 }}>Taxa de pagamento</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {m.porCompetencia.map((s) => (
+                    <LinhaCompetencia key={s.mes} s={s} rotulo={nomeDoMes(s.mes!)} />
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <LinhaCompetencia s={m.totalCompetencias} rotulo="Total" negrito />
+                </TableFooter>
+              </Table>
+            </TableContainer>
           </Box>
           <TextoSuave>Taxa de pagamento = pagas ÷ (geradas − canceladas). A situação é a de hoje.</TextoSuave>
         </CardContent>
@@ -119,25 +121,27 @@ function Conteudo({ m }: { m: RelatorioMensalidades }) {
               <TextoSuave>Nenhuma mensalidade recebida no período.</TextoSuave>
             ) : (
               <Box sx={{ overflowX: 'auto' }}>
-                <Table size="small" aria-label="Recebido em mensalidades">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Mês do recebimento</TableCell>
-                      <TableCell align="right">Atrasadas</TableCell>
-                      <TableCell align="right">Do mês</TableCell>
-                      <TableCell align="right">Antecipadas</TableCell>
-                      <TableCell align="right">Total</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {m.recebimentosPorMes.map((x) => (
-                      <LinhaRecebimento key={x.mes} r={x} rotulo={nomeDoMes(x.mes!)} />
-                    ))}
-                  </TableBody>
-                  <TableFooter>
-                    <LinhaRecebimento r={r} rotulo="Total" negrito />
-                  </TableFooter>
-                </Table>
+                <TableContainer>
+                  <Table size="small" aria-label="Recebido em mensalidades">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Mês do recebimento</TableCell>
+                        <TableCell align="right">Atrasadas</TableCell>
+                        <TableCell align="right">Do mês</TableCell>
+                        <TableCell align="right">Antecipadas</TableCell>
+                        <TableCell align="right">Total</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {m.recebimentosPorMes.map((x) => (
+                        <LinhaRecebimento key={x.mes} r={x} rotulo={nomeDoMes(x.mes!)} />
+                      ))}
+                    </TableBody>
+                    <TableFooter>
+                      <LinhaRecebimento r={r} rotulo="Total" negrito />
+                    </TableFooter>
+                  </Table>
+                </TableContainer>
               </Box>
             )}
             <TextoSuave>
@@ -194,26 +198,28 @@ function DoadoresComPendencias({ m }: { m: RelatorioMensalidades }) {
           <TextoSuave>Nenhum doador ativo com 3 ou mais competências pendentes.</TextoSuave>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" aria-label="Doadores com pendências">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Doador</TableCell>
-                  <TableCell align="right">Pendentes</TableCell>
-                  <TableCell align="right">Valor pendente</TableCell>
-                  <TableCell>Último pagamento</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {m.doadoresComPendencias.map((d) => (
-                  <TableRow key={d.doadorId}>
-                    <TableCell>{comPerfil ? <LinkRota to={`/doadores/${d.doadorId}`}>{d.nome}</LinkRota> : d.nome}</TableCell>
-                    <TableCell align="right">{d.pendentes}</TableCell>
-                    <TableCell align="right"><Dinheiro valor={d.valorPendente} /></TableCell>
-                    <TableCell>{d.ultimoPagamento ? formatarData(d.ultimoPagamento) : 'Nunca pagou'}</TableCell>
+            <TableContainer>
+              <Table size="small" aria-label="Doadores com pendências">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Doador</TableCell>
+                    <TableCell align="right">Pendentes</TableCell>
+                    <TableCell align="right">Valor pendente</TableCell>
+                    <TableCell>Último pagamento</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {m.doadoresComPendencias.map((d) => (
+                    <TableRow key={d.doadorId}>
+                      <TableCell>{comPerfil ? <LinkRota to={`/doadores/${d.doadorId}`}>{d.nome}</LinkRota> : d.nome}</TableCell>
+                      <TableCell align="right">{d.pendentes}</TableCell>
+                      <TableCell align="right"><Dinheiro valor={d.valorPendente} /></TableCell>
+                      <TableCell>{d.ultimoPagamento ? formatarData(d.ultimoPagamento) : 'Nunca pagou'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
         )}
       </CardContent>

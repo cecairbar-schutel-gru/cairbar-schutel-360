@@ -42,8 +42,11 @@ export function Shell() {
   const { usuario, perfilAtivo, trocarPerfil, sair, possuiPapel } = useAuth()
   const navegar = useNavigate()
   const theme = useTheme()
-  // Tablet e celular: menu lateral escondido atrás do botão hambúrguer.
-  const compacto = useMediaQuery(theme.breakpoints.down('lg'))
+  // Mobile-first: menu lateral atrás do botão hambúrguer; fixo só de `lg` para cima.
+  const amplo = useMediaQuery(theme.breakpoints.up('lg'))
+  const compacto = !amplo
+  // No celular o seletor de perfil sai da barra (não cabe) e vai para o topo do menu.
+  const celular = !useMediaQuery(theme.breakpoints.up('sm'))
   const [menuAberto, setMenuAberto] = useState(false)
   const fecharMenu = () => setMenuAberto(false)
   const [recolhidos, setRecolhidos] = useState<Set<string>>(new Set())
@@ -100,6 +103,27 @@ export function Shell() {
         })}
       </List>
     </Box>
+  )
+
+  const seletorPerfil = usuario && usuario.papeis.length > 1 && perfilAtivo && (
+    <TextField
+      id="seletor-perfil"
+      select
+      size="small"
+      label="Perfil ativo"
+      value={perfilAtivo}
+      onChange={(e) => {
+        trocarPerfil(e.target.value as Papel)
+        fecharMenu()
+      }}
+      slotProps={{ select: { native: true } }}
+    >
+      {usuario.papeis.map((p) => (
+        <option key={p} value={p}>
+          {ROTULO_PAPEL[p]}
+        </option>
+      ))}
+    </TextField>
   )
 
   return (
@@ -192,23 +216,7 @@ export function Shell() {
               DurvalCRM
             </Typography>
           </Box>
-          {usuario && usuario.papeis.length > 1 && perfilAtivo && (
-            <TextField
-              id="seletor-perfil"
-              select
-              size="small"
-              label="Perfil ativo"
-              value={perfilAtivo}
-              onChange={(e) => trocarPerfil(e.target.value as Papel)}
-              slotProps={{ select: { native: true } }}
-            >
-              {usuario.papeis.map((p) => (
-                <option key={p} value={p}>
-                  {ROTULO_PAPEL[p]}
-                </option>
-              ))}
-            </TextField>
-          )}
+          {!celular && seletorPerfil}
           <Typography
             component="span"
             noWrap
@@ -246,10 +254,20 @@ export function Shell() {
         }}
       >
         {compacto ? (
-          <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+          <Box
+            sx={{
+              px: 2,
+              pt: 2,
+              pb: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
             <Typography variant="subtitle1" component="p" noWrap>
               {usuario?.nome}
             </Typography>
+            {celular && seletorPerfil}
           </Box>
         ) : (
           <Toolbar sx={{ mt: '4px' }} />

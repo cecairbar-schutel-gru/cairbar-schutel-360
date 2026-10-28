@@ -14,6 +14,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TablePagination,
@@ -184,54 +185,56 @@ export function EstoquePage() {
       {!itens.carregando && !itens.erro && lista.length === 0 && <TextoSuave>Nenhum produto encontrado.</TextoSuave>}
       {lista.length > 0 && (
         <>
-          <Table size="small" aria-label={livros ? 'Livros' : 'Produtos da cantina'}>
-            <TableHead>
-              <TableRow>
-                <TableCell>{livros ? 'Título' : 'Produto'}</TableCell>
-                <TableCell align="right">Preço</TableCell>
-                <TableCell align="right">Saldo</TableCell>
-                {livros && <TableCell align="right">Próprio</TableCell>}
-                {livros && <TableCell align="right">Consignado</TableCell>}
-                <TableCell>Última entrada</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Ações</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((p) => (
-                <TableRow key={p.id} hover>
-                  <TableCell>
-                    <LinkRota to={`/estoque/produtos/${p.id}`}>{p.nome}</LinkRota>
-                    <Typography variant="body2" color="text.secondary">
-                      {livros ? [p.autor, p.editoraNome].filter(Boolean).join(' · ') : p.categoria}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">{formatarMoeda(p.preco)}</TableCell>
-                  <TableCell align="right">
-                    {p.saldo}
-                    {p.aguardandoBaixa > 0 && (
-                      <Chip
-                        size="small"
-                        color="warning"
-                        variant="outlined"
-                        label={`${p.aguardandoBaixa} aguardando baixa`}
-                        sx={{ ml: 1 }}
-                      />
-                    )}
-                  </TableCell>
-                  {livros && <TableCell align="right">{p.saldoProprio}</TableCell>}
-                  {livros && <TableCell align="right">{p.saldoConsignado}</TableCell>}
-                  <TableCell>{formatarDataDoInstante(p.ultimaEntrada)}</TableCell>
-                  <TableCell>
-                    <StatusProdutoTag ativo={p.ativo} />
-                  </TableCell>
-                  <TableCell align="right">
-                    <MenuAcoes produto={p} acoes={acoes} />
-                  </TableCell>
+          <TableContainer>
+            <Table size="small" aria-label={livros ? 'Livros' : 'Produtos da cantina'}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{livros ? 'Título' : 'Produto'}</TableCell>
+                  <TableCell align="right">Preço</TableCell>
+                  <TableCell align="right">Saldo</TableCell>
+                  {livros && <TableCell align="right">Próprio</TableCell>}
+                  {livros && <TableCell align="right">Consignado</TableCell>}
+                  <TableCell>Última entrada</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="right">Ações</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((p) => (
+                  <TableRow key={p.id} hover>
+                    <TableCell>
+                      <LinkRota to={`/estoque/produtos/${p.id}`}>{p.nome}</LinkRota>
+                      <Typography variant="body2" color="text.secondary">
+                        {livros ? [p.autor, p.editoraNome].filter(Boolean).join(' · ') : p.categoria}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">{formatarMoeda(p.preco)}</TableCell>
+                    <TableCell align="right">
+                      {p.saldo}
+                      {p.aguardandoBaixa > 0 && (
+                        <Chip
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                          label={`${p.aguardandoBaixa} aguardando baixa`}
+                          sx={{ ml: 1 }}
+                        />
+                      )}
+                    </TableCell>
+                    {livros && <TableCell align="right">{p.saldoProprio}</TableCell>}
+                    {livros && <TableCell align="right">{p.saldoConsignado}</TableCell>}
+                    <TableCell>{formatarDataDoInstante(p.ultimaEntrada)}</TableCell>
+                    <TableCell>
+                      <StatusProdutoTag ativo={p.ativo} />
+                    </TableCell>
+                    <TableCell align="right">
+                      <MenuAcoes produto={p} acoes={acoes} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TablePagination
             component="div"
             count={lista.length}

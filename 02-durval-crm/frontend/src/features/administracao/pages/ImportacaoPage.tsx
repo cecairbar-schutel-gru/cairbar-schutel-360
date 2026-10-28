@@ -11,6 +11,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Tabs,
@@ -177,24 +178,26 @@ export function ImportacaoPage() {
               <Aviso tipo="error" titulo={`${previa.erros.length} erro(s): nada será importado`}>
                 Corrija a planilha e envie de novo. A importação é tudo ou nada.
               </Aviso>
-              <Table size="small" aria-label="Erros por linha">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Linha</TableCell>
-                    <TableCell>Coluna</TableCell>
-                    <TableCell>Erro</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {previa.erros.map((e, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{e.linha}</TableCell>
-                      <TableCell>{e.coluna ?? '—'}</TableCell>
-                      <TableCell>{e.mensagem}</TableCell>
+              <TableContainer>
+                <Table size="small" aria-label="Erros por linha">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Linha</TableCell>
+                      <TableCell>Coluna</TableCell>
+                      <TableCell>Erro</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {previa.erros.map((e, i) => (
+                      <TableRow key={i}>
+                        <TableCell>{e.linha}</TableCell>
+                        <TableCell>{e.coluna ?? '—'}</TableCell>
+                        <TableCell>{e.mensagem}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </>
           )}
           {previa.tipo === 'FINANCEIRO' && previa.erros.length === 0 && (
@@ -209,42 +212,44 @@ export function ImportacaoPage() {
                 Possíveis duplicatas
               </Typography>
               <TextoSuave>Decida cada uma: é outra pessoa (importar) ou já está cadastrada (ignorar a linha).</TextoSuave>
-              <Table size="small" aria-label="Possíveis duplicatas">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Linha</TableCell>
-                    <TableCell>Na planilha</TableCell>
-                    <TableCell>Já cadastrados</TableCell>
-                    <TableCell>Decisão</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {previa.duplicatas.map((d) => (
-                    <TableRow key={d.linha}>
-                      <TableCell>{d.linha}</TableCell>
-                      <TableCell>{d.nome}</TableCell>
-                      <TableCell>
-                        {d.possiveis.map((p) => (
-                          <div key={p.id}>
-                            <LinkRota to={`/doadores/${p.id}`}>{p.nome}</LinkRota> ({p.motivos.map((m) => MOTIVO[m] ?? m).join(', ')})
-                          </div>
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        <RadioGroup
-                          row
-                          aria-label={`Decisão da linha ${d.linha}`}
-                          value={decisoes[d.linha] ?? ''}
-                          onChange={(e) => setDecisoes({ ...decisoes, [d.linha]: e.target.value as DecisaoDuplicata })}
-                        >
-                          <FormControlLabel value="IMPORTAR" control={<Radio size="small" />} label="É outra pessoa" />
-                          <FormControlLabel value="IGNORAR" control={<Radio size="small" />} label="Ignorar" />
-                        </RadioGroup>
-                      </TableCell>
+              <TableContainer>
+                <Table size="small" aria-label="Possíveis duplicatas">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Linha</TableCell>
+                      <TableCell>Na planilha</TableCell>
+                      <TableCell>Já cadastrados</TableCell>
+                      <TableCell>Decisão</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {previa.duplicatas.map((d) => (
+                      <TableRow key={d.linha}>
+                        <TableCell>{d.linha}</TableCell>
+                        <TableCell>{d.nome}</TableCell>
+                        <TableCell>
+                          {d.possiveis.map((p) => (
+                            <div key={p.id}>
+                              <LinkRota to={`/doadores/${p.id}`}>{p.nome}</LinkRota> ({p.motivos.map((m) => MOTIVO[m] ?? m).join(', ')})
+                            </div>
+                          ))}
+                        </TableCell>
+                        <TableCell>
+                          <RadioGroup
+                            row
+                            aria-label={`Decisão da linha ${d.linha}`}
+                            value={decisoes[d.linha] ?? ''}
+                            onChange={(e) => setDecisoes({ ...decisoes, [d.linha]: e.target.value as DecisaoDuplicata })}
+                          >
+                            <FormControlLabel value="IMPORTAR" control={<Radio size="small" />} label="É outra pessoa" />
+                            <FormControlLabel value="IGNORAR" control={<Radio size="small" />} label="Ignorar" />
+                          </RadioGroup>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>
           )}
           <LinhaAcoes>
@@ -263,46 +268,48 @@ export function ImportacaoPage() {
       {historico.carregando && <Carregando linhas={2} />}
       {historico.dados?.length === 0 && <TextoSuave>Nenhuma importação até agora.</TextoSuave>}
       {historico.dados && historico.dados.length > 0 && (
-        <Table size="small" aria-label="Importações realizadas">
-          <TableHead>
-            <TableRow>
-              <TableCell>Data</TableCell>
-              <TableCell>Arquivo</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell>Usuário</TableCell>
-              <TableCell align="right">Linhas</TableCell>
-              <TableCell align="right">Importadas</TableCell>
-              <TableCell>Situação</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {historico.dados.map((i) => (
-              <TableRow key={i.id} hover>
-                <TableCell>{formatarDataHora(i.registradaEm)}</TableCell>
-                <TableCell>{i.arquivo}</TableCell>
-                <TableCell>{ROTULO_IMPORTACAO[i.tipo]}</TableCell>
-                <TableCell>{i.usuario ?? '—'}</TableCell>
-                <TableCell align="right">{i.linhasTotal}</TableCell>
-                <TableCell align="right">{i.linhasImportadas}</TableCell>
-                <TableCell>
-                  {i.situacao === 'DESFEITA' ? (
-                    <Chip size="small" label={`Desfeita${i.desfeitaPor ? ` por ${i.desfeitaPor}` : ''}`} />
-                  ) : (
-                    <Chip size="small" color="success" label="Concluída" />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {i.podeDesfazer && (
-                    <Button size="small" color="error" onClick={() => setDesfazendo(i)}>
-                      Desfazer
-                    </Button>
-                  )}
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Importações realizadas">
+            <TableHead>
+              <TableRow>
+                <TableCell>Data</TableCell>
+                <TableCell>Arquivo</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell>Usuário</TableCell>
+                <TableCell align="right">Linhas</TableCell>
+                <TableCell align="right">Importadas</TableCell>
+                <TableCell>Situação</TableCell>
+                <TableCell>Ações</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {historico.dados.map((i) => (
+                <TableRow key={i.id} hover>
+                  <TableCell>{formatarDataHora(i.registradaEm)}</TableCell>
+                  <TableCell>{i.arquivo}</TableCell>
+                  <TableCell>{ROTULO_IMPORTACAO[i.tipo]}</TableCell>
+                  <TableCell>{i.usuario ?? '—'}</TableCell>
+                  <TableCell align="right">{i.linhasTotal}</TableCell>
+                  <TableCell align="right">{i.linhasImportadas}</TableCell>
+                  <TableCell>
+                    {i.situacao === 'DESFEITA' ? (
+                      <Chip size="small" label={`Desfeita${i.desfeitaPor ? ` por ${i.desfeitaPor}` : ''}`} />
+                    ) : (
+                      <Chip size="small" color="success" label="Concluída" />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {i.podeDesfazer && (
+                      <Button size="small" color="error" onClick={() => setDesfazendo(i)}>
+                        Desfazer
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {confirmando && previa && (
@@ -364,25 +371,27 @@ export function ImportacaoPage() {
 
 function Totais({ titulo, totais }: { titulo: string; totais: TotalImportacao[] }) {
   return (
-    <Table size="small" aria-label={titulo}>
-      <TableHead>
-        <TableRow>
-          <TableCell>{titulo}</TableCell>
-          <TableCell align="right">Linhas</TableCell>
-          <TableCell align="right">Receitas</TableCell>
-          <TableCell align="right">Despesas</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {totais.map((t) => (
-          <TableRow key={t.nome}>
-            <TableCell>{t.nome}</TableCell>
-            <TableCell align="right">{t.linhas}</TableCell>
-            <TableCell align="right">{formatarMoeda(t.receitas)}</TableCell>
-            <TableCell align="right">{formatarMoeda(t.despesas)}</TableCell>
+    <TableContainer>
+      <Table size="small" aria-label={titulo}>
+        <TableHead>
+          <TableRow>
+            <TableCell>{titulo}</TableCell>
+            <TableCell align="right">Linhas</TableCell>
+            <TableCell align="right">Receitas</TableCell>
+            <TableCell align="right">Despesas</TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHead>
+        <TableBody>
+          {totais.map((t) => (
+            <TableRow key={t.nome}>
+              <TableCell>{t.nome}</TableCell>
+              <TableCell align="right">{t.linhas}</TableCell>
+              <TableCell align="right">{formatarMoeda(t.receitas)}</TableCell>
+              <TableCell align="right">{formatarMoeda(t.despesas)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }

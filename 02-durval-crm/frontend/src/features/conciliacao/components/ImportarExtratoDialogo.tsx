@@ -13,6 +13,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -33,6 +34,7 @@ import {
   paraIsoData,
 } from '../../../shared/formatters/datas'
 import { formatarMoeda } from '../../../shared/formatters/formatadores'
+import { useTelaCheia } from '../../../shared/hooks/useTelaCheia'
 import { Valor } from '../../financeiro/components/Tags'
 import {
   decodificarArquivo,
@@ -83,6 +85,7 @@ export function ImportarExtratoDialogo({
   onImportado,
 }: Props) {
   const idTitulo = useId()
+  const telaCheia = useTelaCheia()
   const [lido, setLido] = useState<ArquivoLido | null>(null)
   const [mapa, setMapa] = useState<MapeamentoCsv>({
     data: 0,
@@ -233,6 +236,7 @@ export function ImportarExtratoDialogo({
       open
       onClose={onFechar}
       aria-labelledby={idTitulo}
+      fullScreen={telaCheia}
       fullWidth
       maxWidth="md"
     >
@@ -392,32 +396,34 @@ export function ImportarExtratoDialogo({
                       ` ${csv.saldosIgnorados} linha(s) de saldo ignorada(s).`}
                   </TextoSuave>
                   <Box sx={{ overflowX: 'auto' }}>
-                    <Table
-                      size="small"
-                      aria-label="Primeiras linhas do extrato"
-                    >
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Data</TableCell>
-                          <TableCell>Descrição</TableCell>
-                          <TableCell align="right">Valor</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {linhas.slice(0, AMOSTRA).map((l, i) => (
-                          <TableRow
-                            key={i}
-                            sx={{ opacity: l.data > dataFim ? 0.5 : 1 }}
-                          >
-                            <TableCell>{formatarData(l.data)}</TableCell>
-                            <TableCell>{l.descricao || '—'}</TableCell>
-                            <TableCell align="right">
-                              <Valor valor={l.valor} />
-                            </TableCell>
+                    <TableContainer>
+                      <Table
+                        size="small"
+                        aria-label="Primeiras linhas do extrato"
+                      >
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Data</TableCell>
+                            <TableCell>Descrição</TableCell>
+                            <TableCell align="right">Valor</TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHead>
+                        <TableBody>
+                          {linhas.slice(0, AMOSTRA).map((l, i) => (
+                            <TableRow
+                              key={i}
+                              sx={{ opacity: l.data > dataFim ? 0.5 : 1 }}
+                            >
+                              <TableCell>{formatarData(l.data)}</TableCell>
+                              <TableCell>{l.descricao || '—'}</TableCell>
+                              <TableCell align="right">
+                                <Valor valor={l.valor} />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   </Box>
                   {linhas.length > AMOSTRA && (
                     <TextoSuave>… e mais {linhas.length - AMOSTRA}.</TextoSuave>

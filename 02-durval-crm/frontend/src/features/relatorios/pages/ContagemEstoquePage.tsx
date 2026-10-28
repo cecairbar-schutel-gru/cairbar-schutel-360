@@ -1,4 +1,4 @@
-import { Box, MenuItem, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import { Box, MenuItem, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, Typography } from '@mui/material'
 import { useAuth } from '../../../auth/AuthProvider'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
@@ -78,41 +78,43 @@ export function ContagemEstoquePage() {
             Quantidades do sistema em <strong>{formatarData(dados.data)}</strong>. Contado por: ______________________ Data: ____/____/______
           </Typography>
           <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" aria-label="Folha de contagem">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Produto</TableCell>
-                  <TableCell>Tipo</TableCell>
-                  <TableCell>Categoria / editora</TableCell>
-                  <TableCell align="right">Próprio</TableCell>
-                  <TableCell align="right">Consignado</TableCell>
-                  <TableCell align="right">No sistema</TableCell>
-                  <TableCell sx={{ minWidth: 120 }}>Contado</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {dados.itens.map((i) => (
-                  <TableRow key={i.produtoId}>
-                    <TableCell>{i.nome}</TableCell>
-                    <TableCell>{i.tipo === 'LIVRO' ? 'Livro' : 'Cantina'}</TableCell>
-                    <TableCell>{(i.tipo === 'LIVRO' ? i.editoraNome : i.categoria) ?? '—'}</TableCell>
-                    <TableCell align="right">{i.proprio}</TableCell>
-                    <TableCell align="right">{i.consignado}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>{i.quantidade}</TableCell>
-                    <TableCell aria-label={`Contado de ${i.nome} (em branco)`} sx={{ borderBottom: 1, borderColor: 'text.primary' }} />
+            <TableContainer>
+              <Table size="small" aria-label="Folha de contagem">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Produto</TableCell>
+                    <TableCell>Tipo</TableCell>
+                    <TableCell>Categoria / editora</TableCell>
+                    <TableCell align="right">Próprio</TableCell>
+                    <TableCell align="right">Consignado</TableCell>
+                    <TableCell align="right">No sistema</TableCell>
+                    <TableCell sx={{ minWidth: 120 }}>Contado</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell colSpan={3} sx={{ fontWeight: 600 }}>Total</TableCell>
-                  <TableCell align="right">{dados.itens.reduce((s, i) => s + i.proprio, 0)}</TableCell>
-                  <TableCell align="right">{dados.itens.reduce((s, i) => s + i.consignado, 0)}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>{dados.itens.reduce((s, i) => s + i.quantidade, 0)}</TableCell>
-                  <TableCell />
-                </TableRow>
-              </TableFooter>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {dados.itens.map((i) => (
+                    <TableRow key={i.produtoId}>
+                      <TableCell>{i.nome}</TableCell>
+                      <TableCell>{i.tipo === 'LIVRO' ? 'Livro' : 'Cantina'}</TableCell>
+                      <TableCell>{(i.tipo === 'LIVRO' ? i.editoraNome : i.categoria) ?? '—'}</TableCell>
+                      <TableCell align="right">{i.proprio}</TableCell>
+                      <TableCell align="right">{i.consignado}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>{i.quantidade}</TableCell>
+                      <TableCell aria-label={`Contado de ${i.nome} (em branco)`} sx={{ borderBottom: 1, borderColor: 'text.primary' }} />
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={3} sx={{ fontWeight: 600 }}>Total</TableCell>
+                    <TableCell align="right">{dados.itens.reduce((s, i) => s + i.proprio, 0)}</TableCell>
+                    <TableCell align="right">{dados.itens.reduce((s, i) => s + i.consignado, 0)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{dados.itens.reduce((s, i) => s + i.quantidade, 0)}</TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            </TableContainer>
           </Box>
           <TextoSuave>Diferenças entre o contado e o sistema se corrigem pelo ajuste após contagem, na página de cada produto.</TextoSuave>
         </>

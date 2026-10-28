@@ -7,6 +7,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -65,43 +66,45 @@ export function BuscaProdutos({ onAdicionar }: { onAdicionar(produto: ProdutoVen
       )}
       {ativa && !carregando && dados?.length === 0 && <TextoSuave>Nenhum produto ativo encontrado.</TextoSuave>}
       {ativa && dados && dados.length > 0 && (
-        <Table size="small" aria-label="Produtos encontrados">
-          <TableHead>
-            <TableRow>
-              <TableCell>Produto</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell align="right">Preço</TableCell>
-              <TableCell align="right">Disponível</TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {dados.map((p) => {
-              const semSaldo = p.disponivel <= 0
-              return (
-                <TableRow key={p.id} sx={semSaldo ? { '& td': { color: 'text.disabled' } } : undefined}>
-                  <TableCell>
-                    {p.nome}
-                    {p.autor && <TextoSuave>{p.autor}</TextoSuave>}
-                  </TableCell>
-                  <TableCell>{ROTULO_TIPO[p.tipo]}</TableCell>
-                  <TableCell align="right">{formatarMoeda(p.preco)}</TableCell>
-                  <TableCell align="right">{semSaldo ? 'Sem estoque' : p.disponivel}</TableCell>
-                  <TableCell align="right">
-                    <Button
-                      size="small"
-                      disabled={semSaldo}
-                      aria-label={`Adicionar ${p.nome}`}
-                      onClick={() => onAdicionar(p)}
-                    >
-                      Adicionar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+        <TableContainer>
+          <Table size="small" aria-label="Produtos encontrados">
+            <TableHead>
+              <TableRow>
+                <TableCell>Produto</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell align="right">Preço</TableCell>
+                <TableCell align="right">Disponível</TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {dados.map((p) => {
+                const semSaldo = p.disponivel <= 0
+                return (
+                  <TableRow key={p.id} sx={semSaldo ? { '& td': { color: 'text.disabled' } } : undefined}>
+                    <TableCell>
+                      {p.nome}
+                      {p.autor && <TextoSuave>{p.autor}</TextoSuave>}
+                    </TableCell>
+                    <TableCell>{ROTULO_TIPO[p.tipo]}</TableCell>
+                    <TableCell align="right">{formatarMoeda(p.preco)}</TableCell>
+                    <TableCell align="right">{semSaldo ? 'Sem estoque' : p.disponivel}</TableCell>
+                    <TableCell align="right">
+                      <Button
+                        size="small"
+                        disabled={semSaldo}
+                        aria-label={`Adicionar ${p.nome}`}
+                        onClick={() => onAdicionar(p)}
+                      >
+                        Adicionar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </Pilha>
   )

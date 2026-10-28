@@ -1,4 +1,4 @@
-import { Button, MenuItem, Table, TableBody, TableCell, TableHead, TableRow, TextField } from '@mui/material'
+import { Button, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material'
 import { useSearchParams } from 'react-router-dom'
 import { ROTULO_PAPEL } from '../../../auth'
 import { Aviso } from '../../../shared/components/Aviso'
@@ -78,36 +78,38 @@ export function AuditoriaPage() {
       )}
       {eventos.dados && eventos.dados.itens.length === 0 && <TextoSuave>Nenhum registro com esses filtros.</TextoSuave>}
       {eventos.dados && eventos.dados.itens.length > 0 && (
-        <Table size="small" aria-label="Registros de auditoria">
-          <TableHead>
-            <TableRow>
-              <TableCell>Data e hora</TableCell>
-              <TableCell>Usuário</TableCell>
-              <TableCell>Perfil</TableCell>
-              <TableCell>Ação</TableCell>
-              <TableCell>Registro</TableCell>
-              <TableCell>Detalhes</TableCell>
-              <TableCell>IP</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {eventos.dados.itens.map((e) => (
-              <TableRow key={e.id} hover>
-                <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatarDataHora(e.em)}</TableCell>
-                <TableCell>{e.autorNome ?? e.autorSubject}</TableCell>
-                <TableCell>{e.perfil ? ROTULO_PAPEL[e.perfil] : '—'}</TableCell>
-                <TableCell>{rotuloAcao(e.acao)}</TableCell>
-                <TableCell>
-                  {rotuloEntidade(e.entidade)} {e.entidadeId !== '-' && <code>{e.entidadeId}</code>}
-                </TableCell>
-                <TableCell>
-                  <DetalhesAuditoria detalhes={e.detalhes} />
-                </TableCell>
-                <TableCell>{e.ip ?? '—'}</TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Registros de auditoria">
+            <TableHead>
+              <TableRow>
+                <TableCell>Data e hora</TableCell>
+                <TableCell>Usuário</TableCell>
+                <TableCell>Perfil</TableCell>
+                <TableCell>Ação</TableCell>
+                <TableCell>Registro</TableCell>
+                <TableCell>Detalhes</TableCell>
+                <TableCell>IP</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {eventos.dados.itens.map((e) => (
+                <TableRow key={e.id} hover>
+                  <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatarDataHora(e.em)}</TableCell>
+                  <TableCell>{e.autorNome ?? e.autorSubject}</TableCell>
+                  <TableCell>{e.perfil ? ROTULO_PAPEL[e.perfil] : '—'}</TableCell>
+                  <TableCell>{rotuloAcao(e.acao)}</TableCell>
+                  <TableCell>
+                    {rotuloEntidade(e.entidade)} {e.entidadeId !== '-' && <code>{e.entidadeId}</code>}
+                  </TableCell>
+                  <TableCell>
+                    <DetalhesAuditoria detalhes={e.detalhes} />
+                  </TableCell>
+                  <TableCell>{e.ip ?? '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {eventos.dados && (pagina > 1 || eventos.dados.temMais) && (
         <LinhaAcoes>

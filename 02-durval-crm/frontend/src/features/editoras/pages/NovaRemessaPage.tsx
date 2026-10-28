@@ -9,6 +9,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableFooter,
   TableHead,
   TableRow,
@@ -187,63 +188,65 @@ export function NovaRemessaPage() {
           </Aviso>
         )}
         <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small" aria-label="Títulos da remessa">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ minWidth: '12rem' }}>Título</TableCell>
-              <TableCell sx={{ width: '7rem', minWidth: '6rem' }}>Qtd.</TableCell>
-              <TableCell sx={{ width: '9rem', minWidth: '7.5rem' }}>Repasse</TableCell>
-              <TableCell align="right" sx={{ width: '4rem' }}>
-                Remover
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {linhas.map((l, i) => (
-              <TableRow key={l.chave}>
-                <TableCell>
-                  <TextField select fullWidth size="small" label={`Título da linha ${i + 1}`} value={l.produtoId} disabled={!editoraId}
-                    onChange={(e) => {
-                      const t = titulo(Number(e.target.value))
-                      alterar(l.chave, { produtoId: Number(e.target.value), repasse: t?.repassePadrao != null ? String(t.repassePadrao) : '' })
-                    }}
-                    error={!!erros[`linha-${l.chave}`]} helperText={erros[`linha-${l.chave}`] ?? ' '}>
-                    {disponiveis.map((t) => (
-                      <MenuItem key={t.produtoId} value={t.produtoId}>
-                        {t.nome}
-                        {t.autor ? ` — ${t.autor}` : ''}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </TableCell>
-                <TableCell>
-                  <TextField size="small" fullWidth label="Qtd." value={l.quantidade} onChange={(e) => alterar(l.chave, { quantidade: e.target.value })}
-                    helperText=" " slotProps={{ htmlInput: { inputMode: 'numeric', 'aria-label': 'Quantidade' } }} />
-                </TableCell>
-                <TableCell>
-                  <TextField size="small" fullWidth label="Repasse" value={repasseDa(l)} onChange={(e) => alterar(l.chave, { repasse: e.target.value })}
-                    helperText=" " slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }, htmlInput: { inputMode: 'decimal' } }} />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton aria-label={`Remover a linha ${i + 1}`} onClick={() => setLinhas((ls) => ls.filter((x) => x.chave !== l.chave))}
-                    disabled={linhas.length === 1}>
-                    <DeleteIcon />
-                  </IconButton>
+        <TableContainer>
+          <Table size="small" aria-label="Títulos da remessa">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ minWidth: '12rem' }}>Título</TableCell>
+                <TableCell sx={{ width: '7rem', minWidth: '6rem' }}>Qtd.</TableCell>
+                <TableCell sx={{ width: '9rem', minWidth: '7.5rem' }}>Repasse</TableCell>
+                <TableCell align="right" sx={{ width: '4rem' }}>
+                  Remover
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell>
-                <Button startIcon={<AddIcon />} onClick={() => setLinhas((ls) => [...ls, novaLinha()])} disabled={!editoraId}>
-                  Adicionar título
-                </Button>
-              </TableCell>
-              <TableCell colSpan={3}>Total: {totalUnidades} unidade(s)</TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {linhas.map((l, i) => (
+                <TableRow key={l.chave}>
+                  <TableCell>
+                    <TextField select fullWidth size="small" label={`Título da linha ${i + 1}`} value={l.produtoId} disabled={!editoraId}
+                      onChange={(e) => {
+                        const t = titulo(Number(e.target.value))
+                        alterar(l.chave, { produtoId: Number(e.target.value), repasse: t?.repassePadrao != null ? String(t.repassePadrao) : '' })
+                      }}
+                      error={!!erros[`linha-${l.chave}`]} helperText={erros[`linha-${l.chave}`] ?? ' '}>
+                      {disponiveis.map((t) => (
+                        <MenuItem key={t.produtoId} value={t.produtoId}>
+                          {t.nome}
+                          {t.autor ? ` — ${t.autor}` : ''}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </TableCell>
+                  <TableCell>
+                    <TextField size="small" fullWidth label="Qtd." value={l.quantidade} onChange={(e) => alterar(l.chave, { quantidade: e.target.value })}
+                      helperText=" " slotProps={{ htmlInput: { inputMode: 'numeric', 'aria-label': 'Quantidade' } }} />
+                  </TableCell>
+                  <TableCell>
+                    <TextField size="small" fullWidth label="Repasse" value={repasseDa(l)} onChange={(e) => alterar(l.chave, { repasse: e.target.value })}
+                      helperText=" " slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }, htmlInput: { inputMode: 'decimal' } }} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton aria-label={`Remover a linha ${i + 1}`} onClick={() => setLinhas((ls) => ls.filter((x) => x.chave !== l.chave))}
+                      disabled={linhas.length === 1}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell>
+                  <Button startIcon={<AddIcon />} onClick={() => setLinhas((ls) => [...ls, novaLinha()])} disabled={!editoraId}>
+                    Adicionar título
+                  </Button>
+                </TableCell>
+                <TableCell colSpan={3}>Total: {totalUnidades} unidade(s)</TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </TableContainer>
         </Box>
         <LinhaAcoes>
           <Button onClick={() => navegar('/editoras?aba=remessas')}>Cancelar</Button>

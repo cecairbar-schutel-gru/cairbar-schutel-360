@@ -9,6 +9,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Tabs,
@@ -128,91 +129,93 @@ export function SolicitacoesPage() {
         <TextoSuave>{aba === 'PENDENTE' ? 'Nenhum pedido pendente.' : 'Nenhum pedido.'}</TextoSuave>
       )}
       {itens.length > 0 && (
-        <Table size="small" aria-label={titulo}>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nº</TableCell>
-              <TableCell>Pedido</TableCell>
-              <TableCell>Produto</TableCell>
-              <TableCell>Detalhe</TableCell>
-              <TableCell>Justificativa</TableCell>
-              <TableCell>Solicitante</TableCell>
-              <TableCell>Situação</TableCell>
-              <TableCell align="right">Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {itens.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell>{s.id}</TableCell>
-                <TableCell>{ROTULO_TIPO_SOLICITACAO[s.tipo]}</TableCell>
-                <TableCell>
-                  <LinkRota to={`/estoque/produtos/${s.produtoId}`}>{s.produtoNome}</LinkRota>
-                </TableCell>
-                <TableCell>
-                  <DescricaoSolicitacao s={s} />
-                </TableCell>
-                <TableCell>
-                  {s.justificativa}
-                  {s.temFoto && (
-                    <Box>
-                      <Button size="small" onClick={() => setFoto(s)}>
-                        Ver foto
-                      </Button>
-                    </Box>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {s.solicitanteNome ?? '—'}
-                  <Typography variant="body2" color="text.secondary">
-                    {formatarDataHora(s.solicitadaEm)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <StatusSolicitacaoTag status={s.status} />
-                  {s.decididaPorNome && s.status !== 'PENDENTE' && (
+        <TableContainer>
+          <Table size="small" aria-label={titulo}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Nº</TableCell>
+                <TableCell>Pedido</TableCell>
+                <TableCell>Produto</TableCell>
+                <TableCell>Detalhe</TableCell>
+                <TableCell>Justificativa</TableCell>
+                <TableCell>Solicitante</TableCell>
+                <TableCell>Situação</TableCell>
+                <TableCell align="right">Ações</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {itens.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell>{s.id}</TableCell>
+                  <TableCell>{ROTULO_TIPO_SOLICITACAO[s.tipo]}</TableCell>
+                  <TableCell>
+                    <LinkRota to={`/estoque/produtos/${s.produtoId}`}>{s.produtoNome}</LinkRota>
+                  </TableCell>
+                  <TableCell>
+                    <DescricaoSolicitacao s={s} />
+                  </TableCell>
+                  <TableCell>
+                    {s.justificativa}
+                    {s.temFoto && (
+                      <Box>
+                        <Button size="small" onClick={() => setFoto(s)}>
+                          Ver foto
+                        </Button>
+                      </Box>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {s.solicitanteNome ?? '—'}
                     <Typography variant="body2" color="text.secondary">
-                      {s.status === 'CANCELADA' ? 'Cancelada' : `Por ${s.decididaPorNome}`}
-                      {s.autoAprovada ? ' (autoaprovada)' : ''} em {formatarDataHora(s.decididaEm)}
+                      {formatarDataHora(s.solicitadaEm)}
                     </Typography>
-                  )}
-                  {s.motivoDecisao && <TextoSuave>Motivo: {s.motivoDecisao}</TextoSuave>}
-                </TableCell>
-                <TableCell align="right">
-                  {s.status === 'PENDENTE' && (
-                    <LinhaAcoes sx={{ justifyContent: 'flex-end' }}>
-                      {fila ? (
-                        <>
+                  </TableCell>
+                  <TableCell>
+                    <StatusSolicitacaoTag status={s.status} />
+                    {s.decididaPorNome && s.status !== 'PENDENTE' && (
+                      <Typography variant="body2" color="text.secondary">
+                        {s.status === 'CANCELADA' ? 'Cancelada' : `Por ${s.decididaPorNome}`}
+                        {s.autoAprovada ? ' (autoaprovada)' : ''} em {formatarDataHora(s.decididaEm)}
+                      </Typography>
+                    )}
+                    {s.motivoDecisao && <TextoSuave>Motivo: {s.motivoDecisao}</TextoSuave>}
+                  </TableCell>
+                  <TableCell align="right">
+                    {s.status === 'PENDENTE' && (
+                      <LinhaAcoes sx={{ justifyContent: 'flex-end' }}>
+                        {fila ? (
+                          <>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              disabled={ocupado === s.id}
+                              aria-label={`Aprovar pedido ${s.id}`}
+                              onClick={() => void executar(s, () => estoqueService.aprovar(s.id), `Pedido nº ${s.id} aprovado.`)}
+                            >
+                              Aprovar
+                            </Button>
+                            <Button size="small" color="error" aria-label={`Rejeitar pedido ${s.id}`} onClick={() => setRejeitando(s)}>
+                              Rejeitar
+                            </Button>
+                          </>
+                        ) : (
                           <Button
                             size="small"
-                            variant="contained"
                             disabled={ocupado === s.id}
-                            aria-label={`Aprovar pedido ${s.id}`}
-                            onClick={() => void executar(s, () => estoqueService.aprovar(s.id), `Pedido nº ${s.id} aprovado.`)}
+                            aria-label={`Cancelar pedido ${s.id}`}
+                            onClick={() => void executar(s, () => estoqueService.cancelarSolicitacao(s.id), `Pedido nº ${s.id} cancelado.`)}
                           >
-                            Aprovar
+                            Cancelar pedido
                           </Button>
-                          <Button size="small" color="error" aria-label={`Rejeitar pedido ${s.id}`} onClick={() => setRejeitando(s)}>
-                            Rejeitar
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="small"
-                          disabled={ocupado === s.id}
-                          aria-label={`Cancelar pedido ${s.id}`}
-                          onClick={() => void executar(s, () => estoqueService.cancelarSolicitacao(s.id), `Pedido nº ${s.id} cancelado.`)}
-                        >
-                          Cancelar pedido
-                        </Button>
-                      )}
-                    </LinhaAcoes>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                        )}
+                      </LinhaAcoes>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {rejeitando && (
         <ModalMotivo

@@ -4,6 +4,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -60,43 +61,45 @@ export function SelecaoCompetencias({ painel, selecionadas, onAlterar }: Props) 
           <Button onClick={() => onAlterar([])}>Limpar seleção</Button>
         )}
       </LinhaAcoes>
-      <Table size="small" aria-label="Competências para pagamento">
-        <TableHead>
-          <TableRow>
-            <TableCell padding="checkbox">Pagar</TableCell>
-            <TableCell>Competência</TableCell>
-            <TableCell>Valor</TableCell>
-            <TableCell>Situação</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {selecionaveis.map((i) => (
-              <TableRow
-                key={i.competencia}
-                hover
-                selected={selecionadas.includes(i.competencia)}
-              >
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selecionadas.includes(i.competencia)}
-                    onChange={() => alternar(i.competencia)}
-                    slotProps={{ input: { 'aria-label': `Pagar ${formatarCompetencia(i.competencia)}` } }}
-                  />
-                </TableCell>
-                <TableCell>
-                  {formatarCompetencia(i.competencia)}
-                </TableCell>
-                <TableCell>{formatarMoeda(i.valor)}</TableCell>
-                <TableCell>
-                  <SituacaoCompetenciaTag
-                    situacao={i.situacao}
-                    atrasada={i.atrasada}
-                  />
-                </TableCell>
-              </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <TableContainer>
+        <Table size="small" aria-label="Competências para pagamento">
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox">Pagar</TableCell>
+              <TableCell>Competência</TableCell>
+              <TableCell>Valor</TableCell>
+              <TableCell>Situação</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {selecionaveis.map((i) => (
+                <TableRow
+                  key={i.competencia}
+                  hover
+                  selected={selecionadas.includes(i.competencia)}
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selecionadas.includes(i.competencia)}
+                      onChange={() => alternar(i.competencia)}
+                      slotProps={{ input: { 'aria-label': `Pagar ${formatarCompetencia(i.competencia)}` } }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {formatarCompetencia(i.competencia)}
+                  </TableCell>
+                  <TableCell>{formatarMoeda(i.valor)}</TableCell>
+                  <TableCell>
+                    <SituacaoCompetenciaTag
+                      situacao={i.situacao}
+                      atrasada={i.atrasada}
+                    />
+                  </TableCell>
+                </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
       <TextoSuave>
         Competências futuras são cobradas pelo valor vigente hoje (
         {formatarMoeda(painel.mensalidadeAtual)}).

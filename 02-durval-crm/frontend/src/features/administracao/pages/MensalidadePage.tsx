@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import { Button, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
 import { mensagemDetalhada } from '../../../shared/api/http'
 import { Aviso } from '../../../shared/components/Aviso'
@@ -104,31 +104,33 @@ export function MensalidadePage() {
       <Typography variant="h6" component="h2">
         Histórico
       </Typography>
-      <Table size="small" aria-label="Histórico de valores da mensalidade">
-        <TableHead>
-          <TableRow>
-            <TableCell>A partir de</TableCell>
-            <TableCell align="right">Valor</TableCell>
-            <TableCell>Motivo</TableCell>
-            <TableCell>Definido por</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {s.historico.map((v) => (
-            <TableRow key={v.id}>
-              <TableCell>
-                {formatarCompetencia(v.vigenteDe)}
-                {v.id === s.agendada?.id ? ' (agendado)' : v.id === s.vigente.id ? ' (vigente)' : ''}
-              </TableCell>
-              <TableCell align="right">{formatarMoeda(v.valor)}</TableCell>
-              <TableCell>{v.motivo ?? '—'}</TableCell>
-              <TableCell>
-                {v.autor.nome ?? v.autor.subject} · {formatarDataHora(v.autor.em)}
-              </TableCell>
+      <TableContainer>
+        <Table size="small" aria-label="Histórico de valores da mensalidade">
+          <TableHead>
+            <TableRow>
+              <TableCell>A partir de</TableCell>
+              <TableCell align="right">Valor</TableCell>
+              <TableCell>Motivo</TableCell>
+              <TableCell>Definido por</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {s.historico.map((v) => (
+              <TableRow key={v.id}>
+                <TableCell>
+                  {formatarCompetencia(v.vigenteDe)}
+                  {v.id === s.agendada?.id ? ' (agendado)' : v.id === s.vigente.id ? ' (vigente)' : ''}
+                </TableCell>
+                <TableCell align="right">{formatarMoeda(v.valor)}</TableCell>
+                <TableCell>{v.motivo ?? '—'}</TableCell>
+                <TableCell>
+                  {v.autor.nome ?? v.autor.subject} · {formatarDataHora(v.autor.em)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {modo && (
         <DialogoNovoValor

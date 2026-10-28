@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableRow,
   Typography,
 } from '@mui/material'
@@ -75,25 +76,27 @@ export function ReciboView({ recibo }: { recibo: Recibo }) {
             Cancelado em {formatarDataHora(recibo.canceladaEm)}. Motivo: {recibo.motivoCancelamento}
           </Typography>
         )}
-        <Table size="small" aria-label="Dados do recibo">
-          <TableBody>
-            <Linha rotulo="Data/hora" valor={formatarDataHora(recibo.recebidaEm)} />
-            <Linha rotulo="Doador" valor={recibo.doadorNome} />
-            {recibo.competencias.map((c) => (
-              <Linha key={c.mes} rotulo={`Competência ${formatarCompetencia(c.mes)}`} valor={formatarMoeda(c.valor)} />
-            ))}
-            {recibo.valorDoacao > 0 && (
-              <Linha
-                rotulo={recibo.tipo === 'DOACAO_ANONIMA' ? 'Doação anônima' : 'Doação extraordinária'}
-                valor={formatarMoeda(recibo.valorDoacao)}
-              />
-            )}
-            {recibo.pagamentos.map((p, i) => (
-              <Linha key={i} rotulo={`${rotuloPagamento(p)} (${p.contaNome})`} valor={formatarMoeda(p.valor)} />
-            ))}
-            <Linha rotulo="Total" valor={formatarMoeda(recibo.total)} forte />
-          </TableBody>
-        </Table>
+        <TableContainer>
+          <Table size="small" aria-label="Dados do recibo">
+            <TableBody>
+              <Linha rotulo="Data/hora" valor={formatarDataHora(recibo.recebidaEm)} />
+              <Linha rotulo="Doador" valor={recibo.doadorNome} />
+              {recibo.competencias.map((c) => (
+                <Linha key={c.mes} rotulo={`Competência ${formatarCompetencia(c.mes)}`} valor={formatarMoeda(c.valor)} />
+              ))}
+              {recibo.valorDoacao > 0 && (
+                <Linha
+                  rotulo={recibo.tipo === 'DOACAO_ANONIMA' ? 'Doação anônima' : 'Doação extraordinária'}
+                  valor={formatarMoeda(recibo.valorDoacao)}
+                />
+              )}
+              {recibo.pagamentos.map((p, i) => (
+                <Linha key={i} rotulo={`${rotuloPagamento(p)} (${p.contaNome})`} valor={formatarMoeda(p.valor)} />
+              ))}
+              <Linha rotulo="Total" valor={formatarMoeda(recibo.total)} forte />
+            </TableBody>
+          </Table>
+        </TableContainer>
         {recibo.observacao && <TextoSuave>Observação: {recibo.observacao}</TextoSuave>}
         <TextoSuave>
           Operador: {recibo.operadorNome}

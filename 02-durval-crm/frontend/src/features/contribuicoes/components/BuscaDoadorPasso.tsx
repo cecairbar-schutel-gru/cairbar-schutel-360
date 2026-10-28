@@ -3,6 +3,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -49,39 +50,41 @@ export function BuscaDoadorPasso({ onSelecionar }: { onSelecionar(d: ResumoDoado
         <TextoSuave>Nenhum doador encontrado.</TextoSuave>
       )}
       {ativa && dados && dados.length > 0 && (
-        <Table size="small" aria-label="Doadores encontrados">
-          <TableHead>
-            <TableRow>
-              <TableCell>Nome</TableCell>
-              <TableCell>Telefone</TableCell>
-              <TableCell>Situação</TableCell>
-              <TableCell>Pendentes</TableCell>
-              <TableCell>Ação</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {dados.map((d) => (
-              <TableRow key={d.id}>
-                <TableCell>{d.nome}</TableCell>
-                <TableCell>{formatarTelefone(d.telefonePrincipal)}</TableCell>
-                <TableCell>
-                  <StatusTag status={d.status} />
-                </TableCell>
-                <TableCell>{d.competenciasPendentes}</TableCell>
-                <TableCell>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    aria-label={`Selecionar ${d.nome}`}
-                    onClick={() => onSelecionar(d)}
-                  >
-                    Selecionar
-                  </Button>
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Doadores encontrados">
+            <TableHead>
+              <TableRow>
+                <TableCell>Nome</TableCell>
+                <TableCell>Telefone</TableCell>
+                <TableCell>Situação</TableCell>
+                <TableCell>Pendentes</TableCell>
+                <TableCell>Ação</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {dados.map((d) => (
+                <TableRow key={d.id}>
+                  <TableCell>{d.nome}</TableCell>
+                  <TableCell>{formatarTelefone(d.telefonePrincipal)}</TableCell>
+                  <TableCell>
+                    <StatusTag status={d.status} />
+                  </TableCell>
+                  <TableCell>{d.competenciasPendentes}</TableCell>
+                  <TableCell>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      aria-label={`Selecionar ${d.nome}`}
+                      onClick={() => onSelecionar(d)}
+                    >
+                      Selecionar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       <LinhaAcoes>
         <Button

@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableRow, TextField } from '@mui/material'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material'
 import { useState } from 'react'
 import { mensagemDetalhada } from '../../../shared/api/http'
 import { Aviso } from '../../../shared/components/Aviso'
@@ -63,35 +63,37 @@ export function CorrigirDialogo({ intencao: i, onFechar, onCorrigida }: { intenc
           </Aviso>
         )}
         <TextoSuave>Divergência relatada: “{i.divergencia}”. Informe as quantidades acordadas com o fornecedor (zero tira o item).</TextoSuave>
-        <Table size="small" aria-label="Quantidades acordadas">
-          <TableHead>
-            <TableRow>
-              <TableCell>Produto</TableCell>
-              <TableCell align="right">Aprovada</TableCell>
-              <TableCell align="right">Recebida</TableCell>
-              <TableCell align="right">Acordada</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {i.itens.map((x) => (
-              <TableRow key={x.produtoId}>
-                <TableCell>{x.produtoNome}</TableCell>
-                <TableCell align="right">{x.quantidade}</TableCell>
-                <TableCell align="right">{x.quantidadeRecebida ?? '—'}</TableCell>
-                <TableCell align="right">
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={quantidades[x.produtoId] ?? ''}
-                    onChange={(e) => setQuantidades((q) => ({ ...q, [x.produtoId]: e.target.value }))}
-                    slotProps={{ htmlInput: { min: 0, step: 1, 'aria-label': `Quantidade acordada de ${x.produtoNome}` } }}
-                    sx={{ width: '6rem' }}
-                  />
-                </TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Quantidades acordadas">
+            <TableHead>
+              <TableRow>
+                <TableCell>Produto</TableCell>
+                <TableCell align="right">Aprovada</TableCell>
+                <TableCell align="right">Recebida</TableCell>
+                <TableCell align="right">Acordada</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {i.itens.map((x) => (
+                <TableRow key={x.produtoId}>
+                  <TableCell>{x.produtoNome}</TableCell>
+                  <TableCell align="right">{x.quantidade}</TableCell>
+                  <TableCell align="right">{x.quantidadeRecebida ?? '—'}</TableCell>
+                  <TableCell align="right">
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={quantidades[x.produtoId] ?? ''}
+                      onChange={(e) => setQuantidades((q) => ({ ...q, [x.produtoId]: e.target.value }))}
+                      slotProps={{ htmlInput: { min: 0, step: 1, 'aria-label': `Quantidade acordada de ${x.produtoNome}` } }}
+                      sx={{ width: '6rem' }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
         <CampoValor
           rotulo="Valor pago"
           valor={valor}

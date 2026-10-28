@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
+import { Button, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthProvider'
@@ -133,30 +133,32 @@ export function EditoraPage() {
       {dados.remessasAbertas.length === 0 ? (
         <TextoSuave>Nenhuma remessa aberta.</TextoSuave>
       ) : (
-        <Table size="small" aria-label="Remessas abertas">
-          <TableHead>
-            <TableRow>
-              <TableCell>Código</TableCell>
-              <TableCell>Recebida em</TableCell>
-              <TableCell>Documento</TableCell>
-              <TableCell align="right">Recebidas</TableCell>
-              <TableCell align="right">Restantes</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {dados.remessasAbertas.map((r) => (
-              <TableRow key={r.id} hover>
-                <TableCell>
-                  <LinkRota to={`/editoras/remessas/${r.id}`}>{r.codigo}</LinkRota>
-                </TableCell>
-                <TableCell>{formatarData(r.recebidaEm)}</TableCell>
-                <TableCell>{r.numeroDocumento ?? '—'}</TableCell>
-                <TableCell align="right">{r.recebidas}</TableCell>
-                <TableCell align="right">{r.restantes}</TableCell>
+        <TableContainer>
+          <Table size="small" aria-label="Remessas abertas">
+            <TableHead>
+              <TableRow>
+                <TableCell>Código</TableCell>
+                <TableCell>Recebida em</TableCell>
+                <TableCell>Documento</TableCell>
+                <TableCell align="right">Recebidas</TableCell>
+                <TableCell align="right">Restantes</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {dados.remessasAbertas.map((r) => (
+                <TableRow key={r.id} hover>
+                  <TableCell>
+                    <LinkRota to={`/editoras/remessas/${r.id}`}>{r.codigo}</LinkRota>
+                  </TableCell>
+                  <TableCell>{formatarData(r.recebidaEm)}</TableCell>
+                  <TableCell>{r.numeroDocumento ?? '—'}</TableCell>
+                  <TableCell align="right">{r.recebidas}</TableCell>
+                  <TableCell align="right">{r.restantes}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {cadastro && (

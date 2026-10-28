@@ -7,6 +7,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -145,51 +146,53 @@ export function PlanoContasPage() {
         </Aviso>
       )}
       {plano.dados && (
-        <Table size="small" aria-label="Plano de contas">
-          <TableHead>
-            <TableRow>
-              <TableCell>Categoria / subcategoria</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell>Situação</TableCell>
-              {admin && <TableCell>Ações</TableCell>}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {plano.dados.map(({ categoria, subcategorias }) => (
-              <Fragment key={categoria.codigo}>
-                <TableRow sx={{ bgcolor: 'background.default' }}>
-                  <TableCell>
-                    <Typography variant="subtitle2" component="span">
-                      {categoria.nome}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{ROTULO_TIPO[categoria.tipo]}</TableCell>
-                  <TableCell>{situacao(categoria)}</TableCell>
-                  {admin && (
+        <TableContainer>
+          <Table size="small" aria-label="Plano de contas">
+            <TableHead>
+              <TableRow>
+                <TableCell>Categoria / subcategoria</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell>Situação</TableCell>
+                {admin && <TableCell>Ações</TableCell>}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {plano.dados.map(({ categoria, subcategorias }) => (
+                <Fragment key={categoria.codigo}>
+                  <TableRow sx={{ bgcolor: 'background.default' }}>
                     <TableCell>
-                      <LinhaAcoes>
-                        {acoes(categoria, subcategorias)}
-                        {categoria.ativa && (
-                          <Button size="small" startIcon={<AddIcon />} onClick={() => abrir({ tipo: 'nova', pai: categoria })}>
-                            Subcategoria
-                          </Button>
-                        )}
-                      </LinhaAcoes>
+                      <Typography variant="subtitle2" component="span">
+                        {categoria.nome}
+                      </Typography>
                     </TableCell>
-                  )}
-                </TableRow>
-                {subcategorias.map((s) => (
-                  <TableRow key={s.codigo} hover>
-                    <TableCell sx={{ pl: 5 }}>{s.nome}</TableCell>
-                    <TableCell>{ROTULO_TIPO[s.tipo]}</TableCell>
-                    <TableCell>{situacao(s)}</TableCell>
-                    {admin && <TableCell>{acoes(s)}</TableCell>}
+                    <TableCell>{ROTULO_TIPO[categoria.tipo]}</TableCell>
+                    <TableCell>{situacao(categoria)}</TableCell>
+                    {admin && (
+                      <TableCell>
+                        <LinhaAcoes>
+                          {acoes(categoria, subcategorias)}
+                          {categoria.ativa && (
+                            <Button size="small" startIcon={<AddIcon />} onClick={() => abrir({ tipo: 'nova', pai: categoria })}>
+                              Subcategoria
+                            </Button>
+                          )}
+                        </LinhaAcoes>
+                      </TableCell>
+                    )}
                   </TableRow>
-                ))}
-              </Fragment>
-            ))}
-          </TableBody>
-        </Table>
+                  {subcategorias.map((s) => (
+                    <TableRow key={s.codigo} hover>
+                      <TableCell sx={{ pl: 5 }}>{s.nome}</TableCell>
+                      <TableCell>{ROTULO_TIPO[s.tipo]}</TableCell>
+                      <TableCell>{situacao(s)}</TableCell>
+                      {admin && <TableCell>{acoes(s)}</TableCell>}
+                    </TableRow>
+                  ))}
+                </Fragment>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       {acao && (
         <DialogoAcao

@@ -1,4 +1,4 @@
-import { Button, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material'
+import { Button, Table, TableBody, TableCell, TableContainer, TableRow, Typography } from '@mui/material'
 import { Aviso } from '../../../shared/components/Aviso'
 import { LinhaAcoes, Pilha } from '../../../shared/components/layout'
 import { CampoValor, CamposPagamento } from '../../../shared/pagamento/CamposPagamento'
@@ -81,22 +81,24 @@ export function PagamentoVenda({ total, valores, onAlterar, entregue, onAlterarE
           />
         }
       />
-      <Table size="small" aria-label="Resumo do pagamento">
-        <TableBody>
-          <TableRow>
-            <TableCell>Total da venda</TableCell>
-            <TableCell align="right">{brlCentavos(total)}</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell>Total informado</TableCell>
-            <TableCell align="right">{brlCentavos(resumo.recebido)}</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell>Diferença</TableCell>
-            <TableCell align="right">{brlCentavos(resumo.diferenca)}</TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+      <TableContainer>
+        <Table size="small" aria-label="Resumo do pagamento">
+          <TableBody>
+            <TableRow>
+              <TableCell>Total da venda</TableCell>
+              <TableCell align="right">{brlCentavos(total)}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>Total informado</TableCell>
+              <TableCell align="right">{brlCentavos(resumo.recebido)}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>Diferença</TableCell>
+              <TableCell align="right">{brlCentavos(resumo.diferenca)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
       {troco !== null && troco >= 0 && (
         <Typography variant="h6" component="p" aria-live="polite">
           Troco: {brlCentavos(troco)}

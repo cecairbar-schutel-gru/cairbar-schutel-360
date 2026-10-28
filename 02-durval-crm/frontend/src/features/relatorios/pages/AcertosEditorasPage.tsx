@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Table, TableBody, TableCell, TableFooter, TableHead, TableRow } from '@mui/material'
+import { Box, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow } from '@mui/material'
 import { Aviso } from '../../../shared/components/Aviso'
 import { Carregando } from '../../../shared/components/Carregando'
 import { Indicador } from '../../../shared/components/Indicador'
@@ -51,28 +51,30 @@ export function AcertosEditorasPage() {
                 <TextoSuave>Nenhuma editora com saldo ou movimento no período.</TextoSuave>
               ) : (
                 <Box sx={{ overflowX: 'auto' }}>
-                  <Table size="small" aria-label="Acertos por editora">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Editora</TableCell>
-                        <TableCell align="right">Saldo inicial</TableCell>
-                        <TableCell align="right">Vendas</TableCell>
-                        <TableCell align="right">Dano/extravio</TableCell>
-                        <TableCell align="right">Estornos</TableCell>
-                        <TableCell align="right">Pagamentos</TableCell>
-                        <TableCell align="right">Saldo final</TableCell>
-                        <TableCell align="right">Transferido ao mês seguinte</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {dados.editoras.map((e) => (
-                        <Linha key={e.editoraId} a={e} mes={mesDaApuracao} />
-                      ))}
-                    </TableBody>
-                    <TableFooter>
-                      <Linha a={dados.total} mes={mesDaApuracao} total />
-                    </TableFooter>
-                  </Table>
+                  <TableContainer>
+                    <Table size="small" aria-label="Acertos por editora">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Editora</TableCell>
+                          <TableCell align="right">Saldo inicial</TableCell>
+                          <TableCell align="right">Vendas</TableCell>
+                          <TableCell align="right">Dano/extravio</TableCell>
+                          <TableCell align="right">Estornos</TableCell>
+                          <TableCell align="right">Pagamentos</TableCell>
+                          <TableCell align="right">Saldo final</TableCell>
+                          <TableCell align="right">Transferido ao mês seguinte</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {dados.editoras.map((e) => (
+                          <Linha key={e.editoraId} a={e} mes={mesDaApuracao} />
+                        ))}
+                      </TableBody>
+                      <TableFooter>
+                        <Linha a={dados.total} mes={mesDaApuracao} total />
+                      </TableFooter>
+                    </Table>
+                  </TableContainer>
                 </Box>
               )}
             </CardContent>

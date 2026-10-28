@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardContent, Checkbox, Chip, FormControlLabel, MenuItem, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import { Box, Button, Card, CardContent, Checkbox, Chip, FormControlLabel, MenuItem, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthProvider'
 import { Aviso } from '../../../shared/components/Aviso'
@@ -120,60 +120,62 @@ function Conteudo({ e, periodo }: { e: RelatorioEstoque; periodo: Periodo }) {
             <TextoSuave>Nenhum produto com os filtros escolhidos.</TextoSuave>
           ) : (
             <Box sx={{ overflowX: 'auto' }}>
-              <Table size="small" aria-label="Saldos e movimentos por produto">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Produto</TableCell>
-                    <TableCell>Origem</TableCell>
-                    {COLUNAS.map((c) => (
-                      <TableCell key={c.chave} align="right">{c.rotulo}</TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {e.produtos.flatMap((p) => {
-                    const linhas = p.origens.map((o, i) => (
-                      <TableRow key={`${p.produtoId}-${o.remessaId ?? 'proprio'}`}>
-                        <TableCell sx={{ borderBottom: p.origens.length > 1 && i < p.origens.length - 1 ? 0 : undefined }}>
-                          {i === 0 && (
-                            <>
-                              <LinkRota to={linkMovimentos(p.produtoId, periodo)}>{p.nome}</LinkRota>
-                              {!p.ativo && <Chip size="small" variant="outlined" label="inativo" sx={{ ml: 1 }} />}
-                              <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
-                                {p.tipo === 'LIVRO' ? (p.editoraNome ?? 'Livro') : (p.categoria ?? 'Cantina')}
-                              </Typography>
-                            </>
-                          )}
-                        </TableCell>
-                        <TableCell>{descreverOrigem(o)}</TableCell>
-                        {COLUNAS.map((c) => (
-                          <TableCell key={c.chave} align="right" sx={{ fontWeight: c.chave === 'fim' ? 600 : undefined }}>{o[c.chave]}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                    if (p.origens.length > 1) {
-                      linhas.push(
-                        <TableRow key={`${p.produtoId}-total`}>
-                          <TableCell />
-                          <TableCell sx={{ fontWeight: 600 }}>Total do produto</TableCell>
+              <TableContainer>
+                <Table size="small" aria-label="Saldos e movimentos por produto">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Produto</TableCell>
+                      <TableCell>Origem</TableCell>
+                      {COLUNAS.map((c) => (
+                        <TableCell key={c.chave} align="right">{c.rotulo}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {e.produtos.flatMap((p) => {
+                      const linhas = p.origens.map((o, i) => (
+                        <TableRow key={`${p.produtoId}-${o.remessaId ?? 'proprio'}`}>
+                          <TableCell sx={{ borderBottom: p.origens.length > 1 && i < p.origens.length - 1 ? 0 : undefined }}>
+                            {i === 0 && (
+                              <>
+                                <LinkRota to={linkMovimentos(p.produtoId, periodo)}>{p.nome}</LinkRota>
+                                {!p.ativo && <Chip size="small" variant="outlined" label="inativo" sx={{ ml: 1 }} />}
+                                <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
+                                  {p.tipo === 'LIVRO' ? (p.editoraNome ?? 'Livro') : (p.categoria ?? 'Cantina')}
+                                </Typography>
+                              </>
+                            )}
+                          </TableCell>
+                          <TableCell>{descreverOrigem(o)}</TableCell>
                           {COLUNAS.map((c) => (
-                            <TableCell key={c.chave} align="right" sx={{ fontWeight: 600 }}>{p.total[c.chave]}</TableCell>
+                            <TableCell key={c.chave} align="right" sx={{ fontWeight: c.chave === 'fim' ? 600 : undefined }}>{o[c.chave]}</TableCell>
                           ))}
-                        </TableRow>,
-                      )
-                    }
-                    return linhas
-                  })}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }} colSpan={2}>Total</TableCell>
-                    {COLUNAS.map((c) => (
-                      <TableCell key={c.chave} align="right" sx={{ fontWeight: 600 }}>{e.total[c.chave]}</TableCell>
-                    ))}
-                  </TableRow>
-                </TableFooter>
-              </Table>
+                        </TableRow>
+                      ))
+                      if (p.origens.length > 1) {
+                        linhas.push(
+                          <TableRow key={`${p.produtoId}-total`}>
+                            <TableCell />
+                            <TableCell sx={{ fontWeight: 600 }}>Total do produto</TableCell>
+                            {COLUNAS.map((c) => (
+                              <TableCell key={c.chave} align="right" sx={{ fontWeight: 600 }}>{p.total[c.chave]}</TableCell>
+                            ))}
+                          </TableRow>,
+                        )
+                      }
+                      return linhas
+                    })}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600 }} colSpan={2}>Total</TableCell>
+                      {COLUNAS.map((c) => (
+                        <TableCell key={c.chave} align="right" sx={{ fontWeight: 600 }}>{e.total[c.chave]}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </TableContainer>
             </Box>
           )}
           <TextoSuave>
@@ -187,22 +189,24 @@ function Conteudo({ e, periodo }: { e: RelatorioEstoque; periodo: Periodo }) {
           <Typography variant="h6" component="h2" gutterBottom>
             Baixas por motivo
           </Typography>
-          <Table size="small" aria-label="Baixas por motivo">
-            <TableBody>
-              {e.baixasPorMotivo.map((b) => (
-                <TableRow key={b.motivo}>
-                  <TableCell>{ROTULO_MOTIVO[b.motivo]}</TableCell>
-                  <TableCell align="right">{b.quantidade}</TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Baixas por motivo">
+              <TableBody>
+                {e.baixasPorMotivo.map((b) => (
+                  <TableRow key={b.motivo}>
+                    <TableCell>{ROTULO_MOTIVO[b.motivo]}</TableCell>
+                    <TableCell align="right">{b.quantidade}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>{e.baixasPorMotivo.reduce((s, b) => s + b.quantidade, 0)}</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600 }}>{e.baixasPorMotivo.reduce((s, b) => s + b.quantidade, 0)}</TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
+              </TableFooter>
+            </Table>
+          </TableContainer>
         </CardContent>
       </Card>
     </>

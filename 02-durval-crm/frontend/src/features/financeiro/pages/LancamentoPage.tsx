@@ -5,6 +5,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -174,46 +175,22 @@ export function LancamentoPage() {
       <Typography variant="h6" component="h2">
         Contas
       </Typography>
-      <Table size="small" aria-label="Linhas de conta">
-        <TableHead>
-          <TableRow>
-            <TableCell>Conta</TableCell>
-            <TableCell>Tipo</TableCell>
-            <TableCell align="right">Movimento</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {l.linhasConta.map((c) => (
-            <TableRow key={c.contaId}>
-              <TableCell>
-                <LinkRota to={`/financeiro/lancamentos?contaId=${c.contaId}`}>{c.contaNome}</LinkRota>
-              </TableCell>
-              <TableCell>{c.tipoConta ? ROTULO_TIPO_CONTA[c.tipoConta] : '—'}</TableCell>
-              <TableCell align="right">
-                <Valor valor={c.valor} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <Typography variant="h6" component="h2">
-        Classificação
-      </Typography>
-      {l.linhasCategoria.length === 0 ? (
-        <TextoSuave>Sem categoria: transferências e liquidações sem taxa não são receita nem despesa.</TextoSuave>
-      ) : (
-        <Table size="small" aria-label="Linhas de categoria">
+      <TableContainer>
+        <Table size="small" aria-label="Linhas de conta">
           <TableHead>
             <TableRow>
-              <TableCell>Categoria</TableCell>
-              <TableCell align="right">Valor</TableCell>
+              <TableCell>Conta</TableCell>
+              <TableCell>Tipo</TableCell>
+              <TableCell align="right">Movimento</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {l.linhasCategoria.map((c) => (
-              <TableRow key={c.ordem}>
-                <TableCell>{c.nome}</TableCell>
+            {l.linhasConta.map((c) => (
+              <TableRow key={c.contaId}>
+                <TableCell>
+                  <LinkRota to={`/financeiro/lancamentos?contaId=${c.contaId}`}>{c.contaNome}</LinkRota>
+                </TableCell>
+                <TableCell>{c.tipoConta ? ROTULO_TIPO_CONTA[c.tipoConta] : '—'}</TableCell>
                 <TableCell align="right">
                   <Valor valor={c.valor} />
                 </TableCell>
@@ -221,6 +198,34 @@ export function LancamentoPage() {
             ))}
           </TableBody>
         </Table>
+      </TableContainer>
+
+      <Typography variant="h6" component="h2">
+        Classificação
+      </Typography>
+      {l.linhasCategoria.length === 0 ? (
+        <TextoSuave>Sem categoria: transferências e liquidações sem taxa não são receita nem despesa.</TextoSuave>
+      ) : (
+        <TableContainer>
+          <Table size="small" aria-label="Linhas de categoria">
+            <TableHead>
+              <TableRow>
+                <TableCell>Categoria</TableCell>
+                <TableCell align="right">Valor</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {l.linhasCategoria.map((c) => (
+                <TableRow key={c.ordem}>
+                  <TableCell>{c.nome}</TableCell>
+                  <TableCell align="right">
+                    <Valor valor={c.valor} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {l.historico.length > 0 && (
@@ -228,28 +233,30 @@ export function LancamentoPage() {
           <Typography variant="h6" component="h2">
             Histórico de classificação
           </Typography>
-          <Table size="small" aria-label="Histórico de classificação">
-            <TableHead>
-              <TableRow>
-                <TableCell>Quando</TableCell>
-                <TableCell>De</TableCell>
-                <TableCell>Para</TableCell>
-                <TableCell>Quem</TableCell>
-                <TableCell>Motivo</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {l.historico.map((h) => (
-                <TableRow key={`${h.em}-${h.ordem}`}>
-                  <TableCell>{formatarDataHora(h.em)}</TableCell>
-                  <TableCell>{h.de}</TableCell>
-                  <TableCell>{h.para}</TableCell>
-                  <TableCell>{h.por}</TableCell>
-                  <TableCell>{h.motivo}</TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Histórico de classificação">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Quando</TableCell>
+                  <TableCell>De</TableCell>
+                  <TableCell>Para</TableCell>
+                  <TableCell>Quem</TableCell>
+                  <TableCell>Motivo</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {l.historico.map((h) => (
+                  <TableRow key={`${h.em}-${h.ordem}`}>
+                    <TableCell>{formatarDataHora(h.em)}</TableCell>
+                    <TableCell>{h.de}</TableCell>
+                    <TableCell>{h.para}</TableCell>
+                    <TableCell>{h.por}</TableCell>
+                    <TableCell>{h.motivo}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </>
       )}
 

@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add'
-import { Button, MenuItem, Table, TableBody, TableCell, TableHead, TablePagination, TableRow, TextField } from '@mui/material'
+import { Button, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Aviso } from '../../../shared/components/Aviso'
@@ -59,40 +59,42 @@ export function PedidosLivrosPage() {
       {!pedidos.carregando && !pedidos.erro && lista.length === 0 && <TextoSuave>Nenhum pedido encontrado.</TextoSuave>}
       {lista.length > 0 && (
         <>
-          <Table size="small" aria-label="Pedidos de livros">
-            <TableHead>
-              <TableRow>
-                <TableCell>Pedido</TableCell>
-                <TableCell>Editora</TableCell>
-                <TableCell>Pedido em</TableCell>
-                <TableCell>Pedido por</TableCell>
-                <TableCell align="right">Títulos</TableCell>
-                <TableCell align="right">Unidades</TableCell>
-                <TableCell>Remessa</TableCell>
-                <TableCell>Situação</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((p) => (
-                <TableRow key={p.id} hover>
-                  <TableCell>
-                    <LinkRota to={`/editoras/pedidos/${p.id}`}>Nº {p.id}</LinkRota>
-                  </TableCell>
-                  <TableCell>{p.editoraNome}</TableCell>
-                  <TableCell>{formatarData(p.pedidoEm)}</TableCell>
-                  <TableCell>{p.pedidoPor}</TableCell>
-                  <TableCell align="right">{p.titulos}</TableCell>
-                  <TableCell align="right">{p.unidades}</TableCell>
-                  <TableCell>
-                    {p.remessaId ? <LinkRota to={`/editoras/remessas/${p.remessaId}`}>{p.remessaCodigo}</LinkRota> : '—'}
-                  </TableCell>
-                  <TableCell>
-                    <SituacaoPedidoTag situacao={p.status} />
-                  </TableCell>
+          <TableContainer>
+            <Table size="small" aria-label="Pedidos de livros">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Pedido</TableCell>
+                  <TableCell>Editora</TableCell>
+                  <TableCell>Pedido em</TableCell>
+                  <TableCell>Pedido por</TableCell>
+                  <TableCell align="right">Títulos</TableCell>
+                  <TableCell align="right">Unidades</TableCell>
+                  <TableCell>Remessa</TableCell>
+                  <TableCell>Situação</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {lista.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA).map((p) => (
+                  <TableRow key={p.id} hover>
+                    <TableCell>
+                      <LinkRota to={`/editoras/pedidos/${p.id}`}>Nº {p.id}</LinkRota>
+                    </TableCell>
+                    <TableCell>{p.editoraNome}</TableCell>
+                    <TableCell>{formatarData(p.pedidoEm)}</TableCell>
+                    <TableCell>{p.pedidoPor}</TableCell>
+                    <TableCell align="right">{p.titulos}</TableCell>
+                    <TableCell align="right">{p.unidades}</TableCell>
+                    <TableCell>
+                      {p.remessaId ? <LinkRota to={`/editoras/remessas/${p.remessaId}`}>{p.remessaCodigo}</LinkRota> : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <SituacaoPedidoTag situacao={p.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TablePagination
             component="div"
             count={lista.length}

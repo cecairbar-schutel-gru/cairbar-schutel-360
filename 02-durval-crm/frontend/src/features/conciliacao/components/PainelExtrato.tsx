@@ -9,6 +9,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TablePagination,
   TableRow,
@@ -176,160 +177,162 @@ export function PainelExtrato({
         <TextoSuave>Todas as linhas do extrato estão conferidas.</TextoSuave>
       ) : (
         <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small" aria-label="Linhas do extrato do banco">
-            <TableHead>
-              <TableRow>
-                {editavel && (
-                  <TableCell padding="checkbox">Confirmar</TableCell>
-                )}
-                <TableCell>Data</TableCell>
-                <TableCell>No extrato</TableCell>
-                <TableCell align="right">Valor</TableCell>
-                <TableCell>No sistema</TableCell>
-                {editavel && <TableCell sx={COLUNA_ACOES_FIXA}>Ações</TableCell>}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {visiveis.map((l) => {
-                const situacao = situacaoDaLinha(l, sessao.dataFim)
-                const sugerido =
-                  l.sugestaoId !== null
-                    ? lancamentos.get(l.sugestaoId)
-                    : undefined
-                return (
-                  <TableRow
-                    key={l.id}
-                    hover
-                    selected={situacao === 'CONFERIDA'}
-                  >
-                    {editavel && (
-                      <TableCell padding="checkbox">
-                        {situacao === 'SUGESTAO' && (
-                          <Checkbox
-                            checked={!desmarcadas.has(l.id)}
-                            onChange={(e) => alternar(l.id, e.target.checked)}
-                            slotProps={{
-                              input: {
-                                'aria-label': `Confirmar a sugestão para “${l.descricao}”`,
-                              },
-                            }}
-                          />
-                        )}
-                      </TableCell>
-                    )}
-                    <TableCell>{formatarData(l.data)}</TableCell>
-                    <TableCell>
-                      {l.descricao}
-                      {l.identificador && (
-                        <Typography
-                          component="span"
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block' }}
-                        >
-                          ID {l.identificador}
-                        </Typography>
+          <TableContainer>
+            <Table size="small" aria-label="Linhas do extrato do banco">
+              <TableHead>
+                <TableRow>
+                  {editavel && (
+                    <TableCell padding="checkbox">Confirmar</TableCell>
+                  )}
+                  <TableCell>Data</TableCell>
+                  <TableCell>No extrato</TableCell>
+                  <TableCell align="right">Valor</TableCell>
+                  <TableCell>No sistema</TableCell>
+                  {editavel && <TableCell sx={COLUNA_ACOES_FIXA}>Ações</TableCell>}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {visiveis.map((l) => {
+                  const situacao = situacaoDaLinha(l, sessao.dataFim)
+                  const sugerido =
+                    l.sugestaoId !== null
+                      ? lancamentos.get(l.sugestaoId)
+                      : undefined
+                  return (
+                    <TableRow
+                      key={l.id}
+                      hover
+                      selected={situacao === 'CONFERIDA'}
+                    >
+                      {editavel && (
+                        <TableCell padding="checkbox">
+                          {situacao === 'SUGESTAO' && (
+                            <Checkbox
+                              checked={!desmarcadas.has(l.id)}
+                              onChange={(e) => alternar(l.id, e.target.checked)}
+                              slotProps={{
+                                input: {
+                                  'aria-label': `Confirmar a sugestão para “${l.descricao}”`,
+                                },
+                              }}
+                            />
+                          )}
+                        </TableCell>
                       )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Valor valor={l.valor} />
-                    </TableCell>
-                    <TableCell>
-                      {situacao === 'CONFERIDA' && (
-                        <>
-                          <Chip
-                            size="small"
-                            color="success"
-                            label="Conferida"
-                            sx={{ mr: 1 }}
-                          />
-                          <LinkRota
-                            to={`/financeiro/lancamentos/${l.lancamentoId}`}
-                          >
-                            nº {l.lancamentoId}
-                          </LinkRota>
+                      <TableCell>{formatarData(l.data)}</TableCell>
+                      <TableCell>
+                        {l.descricao}
+                        {l.identificador && (
                           <Typography
                             component="span"
                             variant="caption"
                             color="text.secondary"
                             sx={{ display: 'block' }}
                           >
-                            {l.conferidaPor} · {formatarDataHora(l.conferidaEm)}
+                            ID {l.identificador}
                           </Typography>
-                        </>
-                      )}
-                      {situacao === 'SUGESTAO' && (
-                        <>
-                          <Chip
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                            label="Sugestão"
-                            sx={{ mr: 1 }}
-                          />
-                          <LinkRota
-                            to={`/financeiro/lancamentos/${l.sugestaoId}`}
-                          >
-                            nº {l.sugestaoId}
-                          </LinkRota>
-                          {sugerido && (
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Valor valor={l.valor} />
+                      </TableCell>
+                      <TableCell>
+                        {situacao === 'CONFERIDA' && (
+                          <>
+                            <Chip
+                              size="small"
+                              color="success"
+                              label="Conferida"
+                              sx={{ mr: 1 }}
+                            />
+                            <LinkRota
+                              to={`/financeiro/lancamentos/${l.lancamentoId}`}
+                            >
+                              nº {l.lancamentoId}
+                            </LinkRota>
                             <Typography
                               component="span"
                               variant="caption"
                               color="text.secondary"
                               sx={{ display: 'block' }}
                             >
-                              {formatarData(sugerido.data)} ·{' '}
-                              {sugerido.descricao}
-                              {sugerido.marcado && ' · já marcado'}
+                              {l.conferidaPor} · {formatarDataHora(l.conferidaEm)}
                             </Typography>
-                          )}
-                        </>
-                      )}
-                      {situacao === 'SEM_LANCAMENTO' && (
-                        <Chip
-                          size="small"
-                          color="warning"
-                          variant="outlined"
-                          label="Sem lançamento"
-                        />
-                      )}
-                      {situacao === 'FORA_DO_PERIODO' && (
-                        <TextoSuave>
-                          Depois do fim do extrato (
-                          {formatarData(sessao.dataFim)})
-                        </TextoSuave>
-                      )}
-                    </TableCell>
-                    {editavel && (
-                      <TableCell sx={COLUNA_ACOES_FIXA}>
-                        {situacao === 'CONFERIDA' && (
-                          <Button
-                            size="small"
-                            disabled={ocupado}
-                            onClick={() => onDesfazer(l)}
-                            aria-label={`Desfazer o par de “${l.descricao}”`}
-                          >
-                            Desfazer
-                          </Button>
+                          </>
+                        )}
+                        {situacao === 'SUGESTAO' && (
+                          <>
+                            <Chip
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              label="Sugestão"
+                              sx={{ mr: 1 }}
+                            />
+                            <LinkRota
+                              to={`/financeiro/lancamentos/${l.sugestaoId}`}
+                            >
+                              nº {l.sugestaoId}
+                            </LinkRota>
+                            {sugerido && (
+                              <Typography
+                                component="span"
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block' }}
+                              >
+                                {formatarData(sugerido.data)} ·{' '}
+                                {sugerido.descricao}
+                                {sugerido.marcado && ' · já marcado'}
+                              </Typography>
+                            )}
+                          </>
                         )}
                         {situacao === 'SEM_LANCAMENTO' && (
-                          <Button
+                          <Chip
                             size="small"
-                            disabled={ocupado}
-                            onClick={() => onAdicionar(l)}
-                            aria-label={`Adicionar lançamento para “${l.descricao}”`}
-                          >
-                            Adicionar
-                          </Button>
+                            color="warning"
+                            variant="outlined"
+                            label="Sem lançamento"
+                          />
+                        )}
+                        {situacao === 'FORA_DO_PERIODO' && (
+                          <TextoSuave>
+                            Depois do fim do extrato (
+                            {formatarData(sessao.dataFim)})
+                          </TextoSuave>
                         )}
                       </TableCell>
-                    )}
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                      {editavel && (
+                        <TableCell sx={COLUNA_ACOES_FIXA}>
+                          {situacao === 'CONFERIDA' && (
+                            <Button
+                              size="small"
+                              disabled={ocupado}
+                              onClick={() => onDesfazer(l)}
+                              aria-label={`Desfazer o par de “${l.descricao}”`}
+                            >
+                              Desfazer
+                            </Button>
+                          )}
+                          {situacao === 'SEM_LANCAMENTO' && (
+                            <Button
+                              size="small"
+                              disabled={ocupado}
+                              onClick={() => onAdicionar(l)}
+                              aria-label={`Adicionar lançamento para “${l.descricao}”`}
+                            >
+                              Adicionar
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
           <TablePagination
             component="div"
             count={exibidas.length}

@@ -34,11 +34,26 @@ afterEach(() => {
 })
 afterAll(() => servidor.close())
 
+// Os testes simulam uma tela de computador: as media queries mobile-first (`min-width`) do MUI
+// valem até esta largura, e as de `max-width` abaixo dela não.
+const LARGURA_TELA_TESTES = 1280
+function atendeMedia(consulta: string): boolean {
+  const condicoes = [...consulta.matchAll(/\((min|max)-width:\s*([\d.]+)px\)/g)]
+  return (
+    condicoes.length > 0 &&
+    condicoes.every(([, tipo, px]) =>
+      tipo === 'min'
+        ? LARGURA_TELA_TESTES >= Number(px)
+        : LARGURA_TELA_TESTES <= Number(px),
+    )
+  )
+}
+
 // jsdom não implementa estes recursos usados pelos componentes de UI (MUI).
 if (!window.matchMedia) {
   window.matchMedia = (consulta: string) =>
     ({
-      matches: false,
+      matches: atendeMedia(consulta),
       media: consulta,
       onchange: null,
       addEventListener: () => {},

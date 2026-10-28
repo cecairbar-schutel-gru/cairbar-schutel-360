@@ -5,6 +5,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -81,89 +82,91 @@ export function TabelaLancamentos({
   comMarcacao,
 }: Props) {
   return (
-    <Table size="small" aria-label={rotulo}>
-      <TableHead>
-        <TableRow>
-          {onMarcar && <TableCell padding="checkbox">No extrato</TableCell>}
-          <TableCell>Data</TableCell>
-          <TableCell>Descrição</TableCell>
-          <TableCell>Origem</TableCell>
-          <TableCell align="right">Valor</TableCell>
-          {comMarcacao && <TableCell>Marcado por</TableCell>}
-          {onCorrigir && <TableCell sx={COLUNA_ACOES_FIXA}>Ações</TableCell>}
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {itens.map((l) => {
-          const origem = linkDaOrigem(l.origemTipo, l.origemId)
-          return (
-            <TableRow key={l.id} hover selected={!!onMarcar && l.marcado}>
-              {onMarcar && (
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={l.marcado}
-                    onChange={(e) => onMarcar(l, e.target.checked)}
-                    slotProps={{
-                      input: {
-                        'aria-label': `Lançamento nº ${l.id}: ${l.descricao}`,
-                      },
-                    }}
-                  />
-                </TableCell>
-              )}
-              <TableCell>{formatarData(l.data)}</TableCell>
-              <TableCell>
-                <LinkRota to={`/financeiro/lancamentos/${l.id}`}>
-                  {l.descricao}
-                </LinkRota>
-                <SinaisLancamento item={l} />
-              </TableCell>
-              <TableCell>
-                {origem ? (
-                  <LinkRota to={origem}>{ROTULO_ORIGEM[l.origemTipo]}</LinkRota>
-                ) : (
-                  ROTULO_ORIGEM[l.origemTipo]
+    <TableContainer>
+      <Table size="small" aria-label={rotulo}>
+        <TableHead>
+          <TableRow>
+            {onMarcar && <TableCell padding="checkbox">No extrato</TableCell>}
+            <TableCell>Data</TableCell>
+            <TableCell>Descrição</TableCell>
+            <TableCell>Origem</TableCell>
+            <TableCell align="right">Valor</TableCell>
+            {comMarcacao && <TableCell>Marcado por</TableCell>}
+            {onCorrigir && <TableCell sx={COLUNA_ACOES_FIXA}>Ações</TableCell>}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {itens.map((l) => {
+            const origem = linkDaOrigem(l.origemTipo, l.origemId)
+            return (
+              <TableRow key={l.id} hover selected={!!onMarcar && l.marcado}>
+                {onMarcar && (
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={l.marcado}
+                      onChange={(e) => onMarcar(l, e.target.checked)}
+                      slotProps={{
+                        input: {
+                          'aria-label': `Lançamento nº ${l.id}: ${l.descricao}`,
+                        },
+                      }}
+                    />
+                  </TableCell>
                 )}
-              </TableCell>
-              <TableCell align="right">
-                <Valor valor={l.valor} />
-              </TableCell>
-              {comMarcacao && (
+                <TableCell>{formatarData(l.data)}</TableCell>
                 <TableCell>
-                  {l.marcadoPor ? (
-                    <>
-                      {l.marcadoPor}
-                      <Typography
-                        component="span"
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block' }}
-                      >
-                        {formatarDataHora(l.marcadoEm)}
-                      </Typography>
-                    </>
+                  <LinkRota to={`/financeiro/lancamentos/${l.id}`}>
+                    {l.descricao}
+                  </LinkRota>
+                  <SinaisLancamento item={l} />
+                </TableCell>
+                <TableCell>
+                  {origem ? (
+                    <LinkRota to={origem}>{ROTULO_ORIGEM[l.origemTipo]}</LinkRota>
                   ) : (
-                    '—'
+                    ROTULO_ORIGEM[l.origemTipo]
                   )}
                 </TableCell>
-              )}
-              {onCorrigir && (
-                <TableCell sx={COLUNA_ACOES_FIXA}>
-                  {l.podeCorrigir && (
-                    <Button
-                      size="small"
-                      onClick={() => onCorrigir(l)}
-                      aria-label={`Corrigir o lançamento nº ${l.id}`}
-                    >
-                      Corrigir
-                    </Button>
-                  )}
+                <TableCell align="right">
+                  <Valor valor={l.valor} />
                 </TableCell>
-              )}
-            </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
+                {comMarcacao && (
+                  <TableCell>
+                    {l.marcadoPor ? (
+                      <>
+                        {l.marcadoPor}
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block' }}
+                        >
+                          {formatarDataHora(l.marcadoEm)}
+                        </Typography>
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
+                )}
+                {onCorrigir && (
+                  <TableCell sx={COLUNA_ACOES_FIXA}>
+                    {l.podeCorrigir && (
+                      <Button
+                        size="small"
+                        onClick={() => onCorrigir(l)}
+                        aria-label={`Corrigir o lançamento nº ${l.id}`}
+                      >
+                        Corrigir
+                      </Button>
+                    )}
+                  </TableCell>
+                )}
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }

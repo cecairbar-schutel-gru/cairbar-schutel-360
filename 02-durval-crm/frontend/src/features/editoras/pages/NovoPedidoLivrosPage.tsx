@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { Button, IconButton, MenuItem, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, TextField } from '@mui/material'
+import { Button, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField } from '@mui/material'
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { mensagemDeErro } from '../../../shared/api/http'
@@ -114,55 +114,57 @@ export function NovoPedidoLivrosPage() {
             Esta editora não tem títulos ativos no catálogo. O Vendedor cadastra os livros no Estoque.
           </Aviso>
         )}
-        <Table size="small" aria-label="Títulos do pedido">
-          <TableHead>
-            <TableRow>
-              <TableCell>Título</TableCell>
-              <TableCell sx={{ width: '8rem' }}>Qtd.</TableCell>
-              <TableCell align="right" sx={{ width: '4rem' }}>
-                Remover
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {linhas.map((l, i) => (
-              <TableRow key={l.chave}>
-                <TableCell>
-                  <TextField select fullWidth size="small" label={`Título da linha ${i + 1}`} value={l.produtoId} disabled={!editoraId}
-                    onChange={(e) => alterar(l.chave, { produtoId: Number(e.target.value) })}
-                    error={!!erros[`linha-${l.chave}`]} helperText={erros[`linha-${l.chave}`] ?? ' '}>
-                    {disponiveis.map((t) => (
-                      <MenuItem key={t.produtoId} value={t.produtoId}>
-                        {t.nome}
-                        {t.autor ? ` — ${t.autor}` : ''}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </TableCell>
-                <TableCell>
-                  <TextField size="small" label="Quantidade" value={l.quantidade} onChange={(e) => alterar(l.chave, { quantidade: e.target.value })}
-                    helperText=" " slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton aria-label={`Remover a linha ${i + 1}`} onClick={() => setLinhas((ls) => ls.filter((x) => x.chave !== l.chave))}
-                    disabled={linhas.length === 1}>
-                    <DeleteIcon />
-                  </IconButton>
+        <TableContainer>
+          <Table size="small" aria-label="Títulos do pedido">
+            <TableHead>
+              <TableRow>
+                <TableCell>Título</TableCell>
+                <TableCell sx={{ width: '8rem' }}>Qtd.</TableCell>
+                <TableCell align="right" sx={{ width: '4rem' }}>
+                  Remover
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell>
-                <Button startIcon={<AddIcon />} onClick={() => setLinhas((ls) => [...ls, novaLinha()])} disabled={!editoraId}>
-                  Adicionar título
-                </Button>
-              </TableCell>
-              <TableCell colSpan={2}>Total: {totalUnidades} unidade(s)</TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {linhas.map((l, i) => (
+                <TableRow key={l.chave}>
+                  <TableCell>
+                    <TextField select fullWidth size="small" label={`Título da linha ${i + 1}`} value={l.produtoId} disabled={!editoraId}
+                      onChange={(e) => alterar(l.chave, { produtoId: Number(e.target.value) })}
+                      error={!!erros[`linha-${l.chave}`]} helperText={erros[`linha-${l.chave}`] ?? ' '}>
+                      {disponiveis.map((t) => (
+                        <MenuItem key={t.produtoId} value={t.produtoId}>
+                          {t.nome}
+                          {t.autor ? ` — ${t.autor}` : ''}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </TableCell>
+                  <TableCell>
+                    <TextField size="small" label="Quantidade" value={l.quantidade} onChange={(e) => alterar(l.chave, { quantidade: e.target.value })}
+                      helperText=" " slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton aria-label={`Remover a linha ${i + 1}`} onClick={() => setLinhas((ls) => ls.filter((x) => x.chave !== l.chave))}
+                      disabled={linhas.length === 1}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell>
+                  <Button startIcon={<AddIcon />} onClick={() => setLinhas((ls) => [...ls, novaLinha()])} disabled={!editoraId}>
+                    Adicionar título
+                  </Button>
+                </TableCell>
+                <TableCell colSpan={2}>Total: {totalUnidades} unidade(s)</TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </TableContainer>
         <LinhaAcoes>
           <Button onClick={() => navegar('/editoras/pedidos')}>Cancelar</Button>
           <Button type="submit" variant="contained" disabled={enviando}>
