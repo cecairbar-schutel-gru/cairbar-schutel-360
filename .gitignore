@@ -9,6 +9,23 @@ CLAUDE.md
 AGENTS.md
 
 # ==========================================================
+# Documentos e imagens de trabalho (mantidos apenas localmente)
+# ==========================================================
+/esquema-navegacao.png
+/01-cairbar-identity-provider/analise-o-arquivo-projeto-identidade-dig-fluttering-ladybug.md
+/01-cairbar-identity-provider/ce_cairbar_logo.png
+/01-cairbar-identity-provider/projeto_identidade_digital_keycloak_ibm_bob.md
+/01-cairbar-identity-provider/routing-map.png
+/02-durval-crm/ce_cairbar_logo.png
+/02-durval-crm/descricao-durvalcrm.md
+/02-durval-crm/Designer.png
+/02-durval-crm/durvalcrm-frontend-plan.md
+/02-durval-crm/durvalcrm-stack-tecnologica.md
+/02-durval-crm/prompt.txt
+/03-cairbar-booksys/especificacao-produto.md
+/03-cairbar-booksys/especificacao-tecnica.md
+
+# ==========================================================
 # Segredos e credenciais — NUNCA versionar
 # ==========================================================
 .vault_pass
